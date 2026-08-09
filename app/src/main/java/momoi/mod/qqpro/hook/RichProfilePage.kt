@@ -1,4 +1,5 @@
 package momoi.mod.qqpro.hook
+import momoi.mod.qqpro.lib.setElevationCompat
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
@@ -87,7 +88,7 @@ object RichProfilePage {
                     cornerRadius = 18.dpf
                     setColor(M3.surfaceContainer)
                 }
-                elevation = 3.dpf
+                setElevationCompat(3.dpf)
                 setPadding(16.dp, 18.dp, 16.dp, 14.dp)
                 layoutParams = LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,

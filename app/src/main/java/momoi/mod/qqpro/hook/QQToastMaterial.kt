@@ -1,4 +1,5 @@
 package momoi.mod.qqpro.hook
+import momoi.mod.qqpro.lib.setElevationCompat
 
 import android.content.Context
 import android.view.View
@@ -47,7 +48,7 @@ fun materializeQQToast(root: View?) {
     (bg ?: root).apply {
         if (this is ImageView) setImageDrawable(null) // drop the native nine-patch, if any
         background = M3.rounded(M3.surfaceContainerHigh, M3.radiusPill)
-        elevation = 6.dp.toFloat()
+        setElevationCompat(6.dp.toFloat())
     }
 
     root.findViewById<TextView>(id("toast_msg"))?.setTextColor(M3.onSurface)

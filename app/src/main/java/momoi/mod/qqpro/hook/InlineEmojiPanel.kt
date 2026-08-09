@@ -1,4 +1,5 @@
 package momoi.mod.qqpro.hook
+import momoi.mod.qqpro.lib.setElevationCompat
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -132,7 +133,7 @@ object InlineEmojiPanel {
                                 M3.radiusLg, M3.radiusLg, M3.radiusLg, M3.radiusLg, 0f, 0f, 0f, 0f,
                             )
                         }
-                        elevation = 24.dp.toFloat()
+                        setElevationCompat(24.dp.toFloat())
                     }
                     val bottomMargin: Int
                     val panelH: Int

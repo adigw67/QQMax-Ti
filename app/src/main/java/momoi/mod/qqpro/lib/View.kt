@@ -80,6 +80,11 @@ fun View.setClipToOutlineCompat(clip: Boolean) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) clipToOutline = clip
 }
 
+/** elevation (View.setElevation) is API 21+ — missing on the API 19 watch. */
+fun View.setElevationCompat(elevationValue: Float) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) elevation = elevationValue
+}
+
 inline fun <T : View> T.clickable(crossinline onClick: ()->Unit) = apply {
     setOnClickListener {
         onClick()
