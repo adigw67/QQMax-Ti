@@ -151,7 +151,7 @@ class SummaryViewer private constructor(
             runCatching { PartialCopyFragment(sb.toString()).show(parentFragmentManager, "qqpro_summary_copy") }
         })
         actionBar.addView(TextView(ctx).apply {
-            text = "Onyx AI 提供技术支持"
+            text = if (Settings.summarizeApiKey.value.isNotBlank()) "自定义 AI 服务" else "Onyx AI 提供技术支持"
             textSize = 10f
             setTextColor(M3.hint)
             gravity = Gravity.CENTER

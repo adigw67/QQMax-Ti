@@ -510,6 +510,10 @@ class 设置页 : SettingsActivity() {
             switch("总结未读消息", "未读超过 20 条时，在“↑X条新消息”气泡下方显示“总结未读”按钮，从第一条未读总结到末尾", Settings.summarizeUnreadButton)
             selector("总结风格", "要点(Markdown列表)/一句话/详细", Settings.summarizeStyle, listOf("要点", "一句话", "详细"))
             summarizeLangSelector("总结语言", "总结输出的语言；自动=跟随会话本身的语言。过往总结记录可在好友/群聊设置页的“总结历史”查看")
+            section("自定义服务", "默认走内置 Onyx 服务（每日限量）。填写 API Key 后改为直连你自己的 OpenAI 兼容接口——内置服务报 502 时用它绕开。")
+            textInput("API Key", "留空=内置服务；填写后直连自定义接口（如 DeepSeek / OpenAI 的 Key）", Settings.summarizeApiKey)
+            textInput("接口地址", "OpenAI 兼容 /chat/completions 完整地址，默认 DeepSeek", Settings.summarizeApiBase)
+            textInput("模型", "默认 deepseek-chat；DeepSeek 用 deepseek-chat，OpenAI 用 gpt-4o-mini 等", Settings.summarizeApiModel)
         },
         SettingsCategory("关于与更新", "版本更新") {
             switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)

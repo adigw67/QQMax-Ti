@@ -286,18 +286,24 @@ object CurrentMsgList {
         seq: Long,
         onProgress: (Int) -> Unit = {},
         result: (WatchAIOMsgItem?) -> Unit,
-        repeatCount: Int = 1000
+        repeatCount: Int = 30
     ) {
-        val msg = msgList.value.find { it.d.msgSeq == seq }
+        // ReplyElement.replayMsgSeq maps to one of the per-record sequence spaces depending on the
+        // kernel version — cover msgSeq / msgId / clientSeq so the match can never silently miss
+        // and fall into unbounded upward paging (the "tap reply card → freeze" bug).
+        val msg = msgList.value.find {
+            it.d.msgSeq == seq || it.d.msgId == seq || it.d.clientSeq == seq
+        }
         if (msg != null) {
             result(msg)
             return
         }
         if (repeatCount <= 0) {
-            Utils.log("findMsg: give up (repeat exhausted) seq=$seq")
+            Utils.log("findMsg: give up (repeat exhausted) seq=$seq size=${msgList.value.size}")
             result(null)
             return
         }
+        Utils.log("findMsg: page up seq=$seq remain=$repeatCount size=${msgList.value.size}")
         // Load older messages and retry. Stop instead of hanging forever when the kernel reports
         // the top of history (LoadPrePageFail), a pre-page added nothing new, or no pre-page result
         // arrives within the timeout.

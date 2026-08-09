@@ -39,8 +39,11 @@ class ReplyClick(
         // Remember where we are now and show the back-down button so the user can return here.
         BubbleTextView.beginJumpUp()
         showLoading(rv, "加载中…")
-        // Optionally drop the page-load cap so very old reply sources can still be located.
-        val limit = if (Settings.replyFullSearch.value) Int.MAX_VALUE else 1000
+        // Bounded upward search: on this slow watch each page is seconds of main-thread work, and
+        // an unbounded cap (or one matching the wrong seq space) turned a reply jump into a long
+        // freeze. 30 pages ≈ 600+ older messages, plenty for locating a practical source; beyond
+        // that we toast instead of hanging.
+        val limit = if (Settings.replyFullSearch.value) 150 else 30
         CurrentMsgList.findMsg(
             seq = reply.replayMsgSeq,
             onProgress = { loaded -> loading?.text = "加载中 $loaded" },

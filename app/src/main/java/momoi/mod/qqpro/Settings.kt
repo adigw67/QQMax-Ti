@@ -456,6 +456,14 @@ object Settings {
     // Stable per-install UUID for the summarization daily quota (X-User-ID). Generated lazily on first
     // use (see Summarizer.userId) and persisted; blank means not yet generated.
     val installUuid = StringPref("installUuid", "")
+    // ===== 聊天总结自定义服务 (by QQMax) =====
+    // API Key 留空 = 内置 Onyx 服务（每日限量）；填写后总结直连用户自己的 OpenAI 兼容接口
+    // （Authorization: Bearer），用于绕开内置服务的故障/配额。
+    val summarizeApiKey = StringPref("summarizeApiKey", "")
+    // 完整的 /chat/completions 地址。默认 DeepSeek 的 OpenAI 兼容接口。
+    val summarizeApiBase = StringPref("summarizeApiBase", "https://api.deepseek.com/v1/chat/completions")
+    // 发给自定义接口的模型名。
+    val summarizeApiModel = StringPref("summarizeApiModel", "deepseek-chat")
 
     // ===== 聊天截图 (by AILIFE) =====
     // The "截图" entry's visibility now lives in 菜单自定义 ([longPressMenuOrder]). The options below
