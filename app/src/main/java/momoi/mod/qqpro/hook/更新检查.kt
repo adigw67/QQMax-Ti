@@ -30,6 +30,9 @@ class 更新检查 : MainActivity() {
         }
         super.onCreate(savedInstanceState)
         Watchdog.install(this)
+        // 图片自动下载开关覆盖（内核按 UIConfig 键向 Java 要配置，原版返回空串导致收到的图片
+        // 永不下载）。放在 MainActivity 启动后，QAutoInject 已填充处理器表，此时覆盖生效。
+        PicAutoDownload.install()
         // Start online-presence polling once at launch if any status surface is enabled (the kernel
         // won't push presence otherwise). Cheap no-op when all status toggles are off. See OnlineStatus.
         if (Settings.anyOnlineStatus) momoi.mod.qqpro.hook.action.OnlineStatus.start()

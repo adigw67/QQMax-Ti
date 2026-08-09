@@ -460,10 +460,20 @@ object Settings {
     // API Key 留空 = 内置 Onyx 服务（每日限量）；填写后总结直连用户自己的 OpenAI 兼容接口
     // （Authorization: Bearer），用于绕开内置服务的故障/配额。
     val summarizeApiKey = StringPref("summarizeApiKey", "")
-    // 完整的 /chat/completions 地址。默认 DeepSeek 的 OpenAI 兼容接口。
-    val summarizeApiBase = StringPref("summarizeApiBase", "https://api.deepseek.com/v1/chat/completions")
+    // 接口地址（根地址即可，请求时自动补全 /chat/completions）。默认 DeepSeek。
+    val summarizeApiBase = StringPref("summarizeApiBase", "https://api.deepseek.com")
     // 发给自定义接口的模型名。
-    val summarizeApiModel = StringPref("summarizeApiModel", "deepseek-chat")
+    val summarizeApiModel = StringPref("summarizeApiModel", "deepseek-v4-flash")
+    init {
+        // v16.1 迁移：默认接口/模型调整。仅在用户尚未配置自定义 Key 时，把旧默认值升级为新默认值，
+        // 不覆盖用户自己填过的东西。
+        if (summarizeApiKey.value.isBlank()) {
+            if (summarizeApiModel.value == "deepseek-chat") summarizeApiModel.value = "deepseek-v4-flash"
+            if (summarizeApiBase.value == "https://api.deepseek.com/v1/chat/completions") {
+                summarizeApiBase.value = "https://api.deepseek.com"
+            }
+        }
+    }
 
     // ===== 聊天截图 (by AILIFE) =====
     // The "截图" entry's visibility now lives in 菜单自定义 ([longPressMenuOrder]). The options below

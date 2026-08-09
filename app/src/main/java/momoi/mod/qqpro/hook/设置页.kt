@@ -512,8 +512,8 @@ class 设置页 : SettingsActivity() {
             summarizeLangSelector("总结语言", "总结输出的语言；自动=跟随会话本身的语言。过往总结记录可在好友/群聊设置页的“总结历史”查看")
             section("自定义服务", "默认走内置 Onyx 服务（每日限量）。填写 API Key 后改为直连你自己的 OpenAI 兼容接口——内置服务报 502 时用它绕开。")
             textInput("API Key", "留空=内置服务；填写后直连自定义接口（如 DeepSeek / OpenAI 的 Key）", Settings.summarizeApiKey)
-            textInput("接口地址", "OpenAI 兼容 /chat/completions 完整地址，默认 DeepSeek", Settings.summarizeApiBase)
-            textInput("模型", "默认 deepseek-chat；DeepSeek 用 deepseek-chat，OpenAI 用 gpt-4o-mini 等", Settings.summarizeApiModel)
+            textInput("接口地址", "OpenAI 兼容接口地址，默认 DeepSeek（自动补全 /chat/completions）", Settings.summarizeApiBase)
+            textInput("模型", "使用的模型名，留空用默认", Settings.summarizeApiModel)
         },
         SettingsCategory("关于与更新", "版本更新") {
             switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)

@@ -166,7 +166,7 @@ object Summarizer {
                 append("。只基于原文，不要编造：\n\n").append(transcript)
             }
             val body = JSONObject().apply {
-                put("model", Settings.summarizeApiModel.value.ifBlank { "deepseek-chat" })
+                put("model", Settings.summarizeApiModel.value.ifBlank { "deepseek-v4-flash" })
                 put("stream", false)
                 put("messages", JSONArray().apply {
                     put(JSONObject().apply {
@@ -177,8 +177,7 @@ object Summarizer {
                 })
             }.toString()
 
-            conn = (URL(Settings.summarizeApiBase.value.ifBlank { "https://api.deepseek.com/v1/chat/completions" })
-                .openConnection() as HttpURLConnection).apply {
+            conn = (URL(customEndpoint()).openConnection() as HttpURLConnection).apply {
                 requestMethod = "POST"
                 connectTimeout = 15000
                 readTimeout = 120000
@@ -219,6 +218,12 @@ object Summarizer {
         } finally {
             conn?.disconnect()
         }
+    }
+
+    /** Normalize the user's base URL into a full /chat/completions endpoint. */
+    private fun customEndpoint(): String {
+        val base = Settings.summarizeApiBase.value.ifBlank { "https://api.deepseek.com" }.trim()
+        return if (base.endsWith("/chat/completions")) base else base.trimEnd('/') + "/chat/completions"
     }
 
     private fun handleError(conn: HttpURLConnection, code: Int, listener: Listener) {

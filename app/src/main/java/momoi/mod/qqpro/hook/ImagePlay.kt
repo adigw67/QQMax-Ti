@@ -179,6 +179,10 @@ private fun kernelLoadPic(
         val provider = AIOPicDownloader.DefaultDownPicParamsProvider(cellItem, 0, 2)
         Utils.log("ImagePlay: kernel download start")
         dl.a(element, size, provider, 1, 0) { info: FileTransNotifyInfo ->
+            Utils.log(
+                "ImagePlay: notify status=${info.trasferStatus} progress=${info.fileProgress}/" +
+                    "${info.totalSize} err=${info.fileErrCode}/${info.fileSrvErrCode}"
+            )
             runOnUi {
                 val total = info.totalSize
                 if (total > 0) {

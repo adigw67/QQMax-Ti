@@ -1,6 +1,7 @@
 package momoi.mod.qqpro.hook.view
 
 import android.animation.ValueAnimator
+import android.os.Build
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.util.DisplayMetrics
@@ -90,6 +91,17 @@ private fun RecyclerView.waitForSettleThenFlash(target: Int, tries: Int) {
 
 /** Pulse a translucent accent over [row]'s foreground twice, then restore whatever was there. */
 private fun flashRow(row: View) {
+    // View.setForeground/getForeground are API 23+; on API 19 (the watch) the property access throws
+    // NoSuchMethodError on the main thread, which is the "tap reply card → crash/freeze" bug. Fall
+    // back to an alpha pulse of the whole row so the jump still highlights the target.
+    if (Build.VERSION.SDK_INT < 23) {
+        ValueAnimator.ofFloat(1f, 0.45f, 1f, 0.45f, 1f).apply {
+            duration = FLASH_DURATION_MS
+            addUpdateListener { row.alpha = it.animatedValue as Float }
+            start()
+        }
+        return
+    }
     val overlay = ColorDrawable(M3.primary)
     val previous: Drawable? = row.foreground
     row.foreground = overlay

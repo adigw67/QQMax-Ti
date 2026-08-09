@@ -2,6 +2,7 @@ package momoi.mod.qqpro.hook
 
 import com.tencent.qqnt.kernel.nativeinterface.FileTransNotifyInfo
 import com.tencent.watch.aio_impl.coreImpl.payLoad.AIOMsgItemPayload
+import momoi.mod.qqpro.util.Utils
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -32,6 +33,13 @@ object MediaDownloadProgress {
                     }
                     if (info != null && info.totalSize > 0) {
                         map[msgId] = (info.fileProgress.toFloat() / info.totalSize).coerceIn(0f, 1f)
+                    }
+                    if (info != null) {
+                        Utils.log(
+                            "MediaDownloadProgress: msgId=$msgId status=${info.trasferStatus} " +
+                                "progress=${info.fileProgress}/${info.totalSize} " +
+                                "err=${info.fileErrCode}/${info.fileSrvErrCode}"
+                        )
                     }
                 }
             }
