@@ -260,7 +260,9 @@ object RichProfilePage {
     /** 群主/管理员在群成员资料卡上禁言该成员（天/时/分 + 执行）。 */
     private fun addMemberMuteRow(ctx: Context, content: LinearLayout, memberUid: String) {
         CurrentGroupMembers.get(SelfContact.peerUid) { self ->
-            if (self.role != MemberRole.OWNER && self.role != MemberRole.ADMIN) return@get
+            val privileged = self.role == MemberRole.OWNER || self.role == MemberRole.ADMIN
+            Utils.log("RichProfilePage mute row: member=$memberUid selfRole=${self.role} show=$privileged")
+            if (!privileged) return@get
             content.post {
                 runCatching {
                     fun label(t: String) = TextView(ctx).apply {

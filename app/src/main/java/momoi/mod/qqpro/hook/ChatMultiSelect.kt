@@ -4,6 +4,7 @@ import momoi.mod.qqpro.lib.setClipToOutlineCompat
 import android.annotation.SuppressLint
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.drawable.GradientDrawable
 import android.view.GestureDetector
 import android.view.Gravity
@@ -328,7 +329,10 @@ object ChatMultiSelect {
                 val bottom = child.bottom.toFloat()
                 // Full-width tint across the whole row (gutter included) so the selection is clearly
                 // visible regardless of which side the bubble is on.
-                if (isSel) c.drawRoundRect(left, top, right, bottom, tintRadius, tintRadius, overlayPaint)
+                // Canvas.drawRoundRect(left, top, right, bottom, rx, ry, paint) is API 21+ — the
+                // API 19 watch only has the RectF overload. Without this, selecting a message
+                // crashed onDrawOver → the chat went black.
+                if (isSel) c.drawRoundRect(RectF(left, top, right, bottom), tintRadius, tintRadius, overlayPaint)
                 // Number / tap-target circle, always centered in the left gutter, vertically on the row.
                 val cy = (child.top + child.bottom) / 2f
                 if (isSel) {
