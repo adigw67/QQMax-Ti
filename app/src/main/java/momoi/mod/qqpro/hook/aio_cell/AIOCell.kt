@@ -102,10 +102,20 @@ object AIOCell {
                 // with our ReplyView quote shown too that makes two cards. Hide the native line
                 // (any TextView starting with 回复/引用/>>) and keep only our quote + content.
                 fun hideNativeReply(v: View) {
+                    // Never touch OUR reply card — its quoted text can legitimately start with
+                    // 回复/引用 (e.g. replying to a reply), which would otherwise blank it.
+                    if (v.tag == "qqpro_reply_view") return
                     if (v is TextView) {
                         val t = v.text?.toString()?.trimStart()
                         if (t != null && (t.startsWith("回复") || t.startsWith("引用") || t.startsWith(">>"))) {
-                            v.visibility = View.GONE
+                            // Hide the whole native quote row (the reply line + its time sibling),
+                            // not just the text — otherwise the native card's timestamp stays.
+                            val parent = v.parent
+                            if (parent is ViewGroup && parent.childCount <= 3) {
+                                parent.visibility = View.GONE
+                            } else {
+                                v.visibility = View.GONE
+                            }
                         }
                     }
                     if (v is ViewGroup) for (i in 0 until v.childCount) hideNativeReply(v.getChildAt(i))

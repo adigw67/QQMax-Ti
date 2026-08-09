@@ -178,6 +178,11 @@ object RichProfilePage {
             card.addView(rows)
             content.addView(card)
 
+            // 禁言特定成员（仅群主/管理员可见；服务端权限受限时提示结果）。
+            // 放在头部卡片正下方而不是按钮之后：资料卡内容超过一屏时，
+            // 排最后会滚到屏幕外，用户看不到「执行」按钮。
+            if (fromGroup && uid.isNotEmpty()) addMemberMuteRow(ctx, content, uid)
+
             if (uid.isNotEmpty()) {
                 ProfileDetailCard.fetch(uid) { info ->
                     rows.post {
@@ -233,8 +238,6 @@ object RichProfilePage {
             // profile page, so we always use our own stage-and-pop atAction.
             if (fromGroup) {
                 addM3Button(MaterialSymbols.alternate_email, "艾特Ta") { atAction() }
-                // 禁言特定成员（仅群主/管理员可见；服务端权限受限时提示结果）
-                addMemberMuteRow(ctx, content, uid)
             }
 
             // TA的空间 — always available: open the user's QZone home feed (reuses the chat-settings
@@ -276,7 +279,7 @@ object RichProfilePage {
                         setTextColor(M3.onSurface)
                         inputType = InputType.TYPE_CLASS_NUMBER
                         gravity = Gravity.CENTER
-                        setBackgroundColor(0x22_FFFFFF.toInt())
+                        setBackgroundColor(M3.surfaceContainerHigh)
                         layoutParams = LinearLayout.LayoutParams(46.dp, 30.dp)
                     }
                     val row = LinearLayout(ctx).apply {
