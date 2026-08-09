@@ -90,10 +90,21 @@ object CurrentGroupMembers {
         // Level ON: per-member fetch (CurrentMemberInfo) for the correct, stub-filtered level.
         // Level OFF: role/title/name only — serve from the bulk member list (no per-member queries),
         // waiting for it to load if needed.
-        if (Settings.showMemberLevel.value) {
+        val ready = info
+        if (ready != null && ready[id] != null) {
+            // Bulk list serves name + role/头衔 immediately — it does NOT carry memberLevel
+            // (0/stub there), so with levels enabled the tag would be missing until the async
+            // per-member fetch lands. Show the role tag now, then upgrade with LV when it does.
+            callback(ready[id]!!)
+            if (Settings.showMemberLevel.value) {
+                CurrentMemberInfo.get(id) { leveled ->
+                    if (leveled.memberLevel > 0) callback(leveled)
+                }
+            }
+        } else if (Settings.showMemberLevel.value) {
+            // Bulk not loaded yet — fall back to the per-member query only.
             CurrentMemberInfo.get(id, callback)
         } else {
-            val ready = info
             if (ready == null) {
                 callbacks.add { info?.get(id)?.let(callback) }
             } else {
