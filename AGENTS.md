@@ -1,0 +1,1 @@
+Load and read the memory file from '/home/ailife/.claude/projects/-home-ailife-Documents-QQPro/memory/MEMORY.md' at the start of each session if it exists, and use its contents to restore context about the project.

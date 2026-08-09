@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Plain-text manifest patch merged into the target APK's binary AndroidManifest at build time by
+  ApkMixin (ManifestMerger). New attributes override old; new nodes are added (matched by element
+  name + android:name). Edit freely to declare extra intent-filters / components / permissions.
+
+  Here: let the modded app appear in the system share sheet so it can RECEIVE shared
+  text/image/video/audio from other apps. JumpActivity is already exported + the launcher.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!--
+      Android 13+ runtime notification permission. The base QQ APK doesn't declare it, so on API 33+
+      every notification is blocked until granted; NotificationPermission.ensure() requests it at
+      launch and needs this <uses-permission> present or requestPermissions() no-ops to denied.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
+      Full-screen incoming-call notification (来电通知修复 / CallNotification). The target already
+      declares this, but re-declare it explicitly so QQPro's own call notification's setFullScreenIntent
+      is honoured; for CATEGORY_CALL it is auto-granted (a plain duplicate merges harmlessly).
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!--
+      Draw-over-other-apps. On Android 10+ a foreground service does NOT grant background activity
+      launch, so a full-screen incoming call can't take over the screen from the background. Holding
+      SYSTEM_ALERT_WINDOW (granted by the user in 设置 › 通话 › 授予悬浮窗权限) is a documented BAL
+      exemption, letting 使用全屏来电 startActivity(BeInvitedActivity) directly even when unlocked/in-use.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!--
+      屏幕共享 (ScreenShare): capture the screen via MediaProjection and inject it as the outgoing
+      video of a C2C call. Android 14+ requires the capture to run inside a foreground service of
+      type mediaProjection, which needs both of these permissions.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
+
+    <!--
+      Keep android:debuggable=true (like every previous release): on this watch ROM the app process
+      hangs in Dalvik VM bootstrap when the flag is absent (main thread stuck in AndroidRuntime::start,
+      no window ever drawn). Harmless for a user-side mod build.
+    -->
+    <application android:debuggable="true">
+        <activity android:name="com.tencent.qqnt.watch.app.JumpActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          Watchdog crash/hang report viewer. Runs in its OWN process (:crash) so it can render
+          the report even after the main process dies in a crash. Only string/boolean attributes
+          are used here because ApkMixin's ManifestMerger writes enum/reference values (launchMode,
+          theme) as raw strings; the activity inherits the app theme and uses launchMode=standard.
+        -->
+        <activity
+            android:name="momoi.mod.qqpro.watchdog.CrashReportActivity"
+            android:process=":crash"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="momoi.mod.qqpro.crash" />
+
+        <!-- In-app debug menu opened from the settings 调试 section. Runs in the main process. -->
+        <activity
+            android:name="momoi.mod.qqpro.watchdog.DebugActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- Watchdog crash/hang test panel, opened from the settings 调试 section. Main process. -->
+        <activity
+            android:name="momoi.mod.qqpro.watchdog.WatchdogTestActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- UI-style chooser (Material vs original), shown on first launch and from settings. Main process. -->
+        <activity
+            android:name="momoi.mod.qqpro.StyleChooserActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- 菜单自定义: drag-to-reorder editor for the long-press / attachment menus. Main process. -->
+        <activity
+            android:name="momoi.mod.qqpro.MenuEditorActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- 来电通知修复: 接听/拒绝 buttons on the incoming-call notification bind QavManageService and
+             drive its IQavInterface binder. Main process, not exported. -->
+        <receiver
+            android:name="momoi.mod.qqpro.hook.call.CallActionReceiver"
+            android:exported="false" />
+
+        <!-- 屏幕共享: transient consent activity + mediaProjection foreground service. Main process. -->
+        <activity
+            android:name="momoi.mod.qqpro.hook.call.ScreenSharePermissionActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- foregroundServiceType is an int enum-flag attr; the merger writes raw values, so use the
+             numeric flag 0x20 = FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION (the enum name "mediaProjection"
+             would be written as an ignored string). Its resource id is supplied by the merger's
+             ANDROID_ATTR_FALLBACK map. -->
+        <service
+            android:name="momoi.mod.qqpro.hook.call.ScreenShareService"
+            android:exported="false"
+            android:foregroundServiceType="0x20" />
+    </application>
+
+    <!--
+      NOTE: do NOT re-declare WRITE_EXTERNAL_STORAGE here. The target APK already declares it
+      UNCAPPED, and QQ's own 保存到相册 checks it at runtime. Adding a duplicate with
+      android:maxSdkVersion merges onto the existing node (merger: new attributes override old),
+      which un-grants storage above that SDK and breaks save-to-album on API > cap
+      (checkSelfPermission → denied → "permanently denied"). Log-saving on the API-28 watch is
+      already covered by the target's uncapped declaration.
+    -->
+</manifest>

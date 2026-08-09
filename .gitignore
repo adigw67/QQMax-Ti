@@ -1,0 +1,20 @@
+# Gradle / Android 构建产物
+.gradle/
+.kotlin/
+build/
+app/build/
+app/dist/
+local.properties
+*.iml
+.idea/
+
+# 腾讯 QQ 原版代码（绝不入库）
+app/libs/
+app/mixin/source.apk
+ApkMixin-gen-dep/raw.jar
+backup/
+*.apk
+
+# 系统/杂项
+.DS_Store
+*.log
