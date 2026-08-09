@@ -3,16 +3,22 @@ import momoi.mod.qqpro.lib.setElevationCompat
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
+import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
 import com.tencent.mobileqq.text.QQText
+import com.tencent.qqnt.kernel.nativeinterface.MemberRole
+import momoi.mod.qqpro.hook.action.CurrentContact
+import momoi.mod.qqpro.hook.action.CurrentGroupMembers
+import momoi.mod.qqpro.hook.action.SelfContact
 import momoi.mod.qqpro.lib.dp
 import android.widget.ImageView
 import momoi.mod.qqpro.lib.material.M3
@@ -22,6 +28,7 @@ import momoi.mod.qqpro.lib.material.MaterialSymbols
 import momoi.mod.qqpro.lib.material.leadingSymbol
 import momoi.mod.qqpro.lib.dpf
 import momoi.mod.qqpro.util.Utils
+import momoi.mod.qqpro.util.runOnUi
 
 /**
  * Fully rebuilds the profile-card page ([com.tencent.qqnt.watch.profile.ui.ProfileCardFragment]) into
@@ -226,6 +233,8 @@ object RichProfilePage {
             // profile page, so we always use our own stage-and-pop atAction.
             if (fromGroup) {
                 addM3Button(MaterialSymbols.alternate_email, "艾特Ta") { atAction() }
+                // 禁言特定成员（仅群主/管理员可见；服务端权限受限时提示结果）
+                addMemberMuteRow(ctx, content, uid)
             }
 
             // TA的空间 — always available: open the user's QZone home feed (reuses the chat-settings
@@ -246,6 +255,63 @@ object RichProfilePage {
             }
             root.addView(scroll)
         }.onFailure { Utils.log("RichProfilePage.build error: $it") }
+    }
+
+    /** 群主/管理员在群成员资料卡上禁言该成员（天/时/分 + 执行）。 */
+    private fun addMemberMuteRow(ctx: Context, content: LinearLayout, memberUid: String) {
+        CurrentGroupMembers.get(SelfContact.peerUid) { self ->
+            if (self.role != MemberRole.OWNER && self.role != MemberRole.ADMIN) return@get
+            content.post {
+                runCatching {
+                    fun label(t: String) = TextView(ctx).apply {
+                        text = t
+                        setTextColor(M3.onSurface)
+                        textSize = 12f
+                        setPadding(4.dp, 0, 4.dp, 0)
+                    }
+                    fun num() = EditText(ctx).apply {
+                        textSize = 12f
+                        setTextColor(M3.onSurface)
+                        inputType = InputType.TYPE_CLASS_NUMBER
+                        gravity = Gravity.CENTER
+                        setBackgroundColor(0x22_FFFFFF.toInt())
+                        layoutParams = LinearLayout.LayoutParams(46.dp, 30.dp)
+                    }
+                    val row = LinearLayout(ctx).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ).apply { topMargin = 10.dp }
+                    }
+                    row.addView(label("禁言"))
+                    val d = num(); row.addView(d); row.addView(label("天"))
+                    val h = num(); row.addView(h); row.addView(label("时"))
+                    val m = num(); row.addView(m); row.addView(label("分"))
+                    val exec = M3Button(ctx).apply {
+                        text = "执行"
+                        variant(M3Button.Variant.FILLED)
+                        setOnClickListener {
+                            val days = d.text.toString().toIntOrNull() ?: 0
+                            val hours = h.text.toString().toIntOrNull() ?: 0
+                            val minutes = m.text.toString().toIntOrNull() ?: 0
+                            val seconds = (days * 24 + hours) * 60 + minutes * 60
+                            if (seconds <= 0) {
+                                Utils.toast(ctx, "请输入禁言时长")
+                                return@setOnClickListener
+                            }
+                            GroupMute.setMemberMuted(CurrentContact.peerUid, memberUid, seconds) { ok, msg ->
+                                runOnUi {
+                                    Utils.toast(ctx, if (ok) "已禁言 ${days}天${hours}时${minutes}分" else "禁言失败 $msg")
+                                }
+                            }
+                        }
+                    }
+                    row.addView(exec, LinearLayout.LayoutParams(70.dp, 34.dp).apply { leftMargin = 6.dp })
+                    content.addView(row)
+                }.onFailure { Utils.log("RichProfilePage mute row failed: $it") }
+            }
+        }
     }
 
     private fun reparent(v: View) {

@@ -1,6 +1,7 @@
 package momoi.mod.qqpro.hook
 
 import com.tencent.qqnt.kernel.api.impl.GroupService
+import com.tencent.qqnt.kernel.nativeinterface.GroupMemberShutUpInfo
 import com.tencent.qqnt.kernel.nativeinterface.IKernelGroupService
 import com.tencent.qqnt.msg.KernelServiceUtil
 import com.tencent.watch.aio_impl.coreImpl.helper.GroupAIOHelper
@@ -62,6 +63,42 @@ object GroupMute {
         }.onFailure {
             Utils.log("GroupMute: setGroupShutUp threw: $it")
             runOnUi { onResult(false) }
+        }
+    }
+
+    /**
+     * 禁言特定成员（OIDB 0x1253）。注意：手表产品可能被服务端拒绝
+     * （-10122 "Product does not have permission"）——结果原样经 [onResult] 回报，由 UI 提示。
+     */
+    fun setMemberMuted(
+        groupPeerUid: String,
+        memberUid: String,
+        seconds: Int,
+        onResult: (Boolean, String) -> Unit,
+    ) {
+        val svc = nativeService()
+        val code = groupCode(groupPeerUid)
+        if (svc == null || code == 0L) {
+            Utils.log("GroupMute: setMemberMuted skipped (svc=${svc != null} code=$code)")
+            onResult(false, "服务不可用")
+            return
+        }
+        runCatching {
+            svc.setMemberShutUp(
+                code,
+                arrayListOf(
+                    GroupMemberShutUpInfo().apply {
+                        uid = memberUid
+                        timeStamp = seconds
+                    }
+                ),
+            ) { c, m ->
+                Utils.log("GroupMute: setMemberShutUp code=$c msg=$m gc=$code uid=$memberUid sec=$seconds")
+                onResult(c == 0, if (c == 0) "" else "$c $m")
+            }
+        }.onFailure {
+            Utils.log("GroupMute: setMemberShutUp threw: $it")
+            onResult(false, it.javaClass.simpleName)
         }
     }
 }
