@@ -1,4 +1,4 @@
-# QQProMax（QQ Max）M2.5-4.4 发布包
+# QQMax-Ti M2.5-4.4 发布包
 
 > 面向儿童手表（Android 4.4.4 / API 19）的 QQ 增强改版，基于***QQMax***
 
