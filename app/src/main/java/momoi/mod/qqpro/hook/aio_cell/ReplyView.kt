@@ -38,6 +38,9 @@ class ReplyView(context: Context) : LinearLayout(context) {
     private var currentMsgSeq: Long = 0
 
     init {
+        // Marks this card so AIOCell's getOrCreate can drop stale instances on recycle
+        // (the WeakHashMap may lose the reference under memory pressure → duplicate cards).
+        tag = "qqpro_reply_view"
         // Explicit MATCH_PARENT layout params so the reply quote fills the bubble width the MESSAGE
         // TEXT decides (LinearLayout re-measures match-width children to the column's wrap width),
         // instead of hugging the short quote text. Set here (not via the .width()/.marginHorizontal()

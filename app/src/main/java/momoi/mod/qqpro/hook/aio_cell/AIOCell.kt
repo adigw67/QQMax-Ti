@@ -100,15 +100,19 @@ object AIOCell {
                 setOnClickListener(ReplyClick(widget, reply))
                 // The native bubble already renders its own "回复 xxx" line inside the content;
                 // with our ReplyView quote shown too that makes two cards. Hide the native line
-                // (any TextView in the widget starting with 回复) and keep only our quote + content.
+                // (any TextView starting with 回复/引用/>>) and keep only our quote + content.
                 fun hideNativeReply(v: View) {
                     if (v is TextView) {
-                        val t = v.text?.toString()
-                        if (t != null && t.startsWith("回复")) v.visibility = View.GONE
+                        val t = v.text?.toString()?.trimStart()
+                        if (t != null && (t.startsWith("回复") || t.startsWith("引用") || t.startsWith(">>"))) {
+                            v.visibility = View.GONE
+                        }
                     }
                     if (v is ViewGroup) for (i in 0 until v.childCount) hideNativeReply(v.getChildAt(i))
                 }
                 hideNativeReply(widget)
+                // The native quote can inflate after bind — re-hide on the next frame.
+                widget.post { hideNativeReply(widget) }
             },
             appendMode = true
         )
@@ -177,6 +181,18 @@ object AIOCell {
             return views.getOrPut(widget) {
                 val view = createView(widget.context)
                 val warp = widget.contentWidget.warpOnce()
+                // The WeakHashMap entry may have been GC'd between binds on this low-RAM watch,
+                // leaving the previous instance still attached → duplicate cards (e.g. double
+                // reply quotes). Drop any same-tag sibling before adding the fresh one.
+                val tag = view.tag
+                if (tag != null) {
+                    val children = (warp as? ViewGroup)?.let { g ->
+                        (0 until g.childCount).map { g.getChildAt(it) }
+                    } ?: emptyList()
+                    children.filter { it !== view && it.tag == tag }.forEach {
+                        (it.parent as? ViewGroup)?.removeView(it)
+                    }
+                }
                 warp.addView(view, 0)
                 WeakReference(view)
             }.get()!!
