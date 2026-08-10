@@ -74,8 +74,8 @@ class ImageResultDialog(
     private fun saveToGallery(appCtx: Context) {
         Thread {
             val (ext, mime) = MediaSave.imageTypeOf(file)
-            val name = "QQMax_${System.currentTimeMillis()}.$ext"
-            val ok = MediaSave.toGallery(appCtx, file, name, mime, isVideo = false, subDir = "QQMax")
+            val name = "QQMaxTi_${System.currentTimeMillis()}.$ext"
+            val ok = MediaSave.toGallery(appCtx, file, name, mime, isVideo = false, subDir = "QQMax-Ti")
             runOnUi { Utils.toast(Utils.application, if (ok) "已保存到相册" else "保存失败") }
         }.start()
     }
