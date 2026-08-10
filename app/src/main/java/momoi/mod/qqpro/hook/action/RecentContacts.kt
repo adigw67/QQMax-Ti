@@ -5,6 +5,7 @@ import android.text.SpannableStringBuilder
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import com.tencent.qqnt.chats.core.adapter.itemdata.RecentContactChatItem
 import com.tencent.qqnt.kernel.nativeinterface.RecentContactInfo
@@ -28,11 +29,23 @@ fun materializeChatRow(holder: WatchRecentContactHolder) {
     if (!Settings.materialChatList.value) return
     runCatching {
         val b = holder.b
-        b.a.background = M3.ripple(M3.rounded(M3.surfaceContainer, M3.radiusLg)) // row card
+        b.a.background = chatRowBackground() // row card（原型克隆，滚动零新建）
         b.c.setTextColor(M3.onSurface)         // title (name)
         b.d.setTextColor(M3.onSurfaceTip)      // time
         b.e.setTextColor(M3.onSurfaceVariant)  // preview / last message
     }.onFailure { Utils.log("materializeChatRow failed: $it") }
+}
+
+/** 会话行背景原型（按 颜色+圆角 缓存）：每行用 constantState.newDrawable() 轻量克隆。
+ *  之前每行每次绑定都新建 GradientDrawable + StateListDrawable，滚动时是 GC 压力源。 */
+private val rowBgPrototypes = HashMap<Long, Drawable>()
+
+private fun chatRowBackground(): Drawable {
+    val color = M3.surfaceContainer
+    val radius = M3.radiusLg
+    val key = (color.toLong() shl 32) or (radius.toRawBits().toLong() and 0xFFFFFFFFL)
+    val proto = rowBgPrototypes.getOrPut(key) { M3.ripple(M3.rounded(color, radius)) }
+    return proto.constantState?.newDrawable() ?: proto
 }
 
 /** 字体包启用时，对会话行标题/预览做逐字兜底（MiSans 未覆盖的生僻字用 Unifont）。 */
@@ -65,11 +78,16 @@ class ChatListMaterial : ChatListFragment() {
  * the theme accent. The native bind only toggles the icon's visibility, so swapping the drawable on
  * full bind persists across show/hide. Gated by the M3 redesign toggle.
  */
+/** Cached resource id of the native pin icon (getIdentifier is a slow package-wide lookup). */
+private var topIconId = 0
+
 fun swapPinIcon(holder: WatchRecentContactHolder) {
     if (!Settings.materialChatList.value) return
     runCatching {
         val root = holder.itemView
-        val id = root.resources.getIdentifier("top_icon", "id", root.context.packageName)
+        val id = if (topIconId != 0) topIconId
+        else root.resources.getIdentifier("top_icon", "id", root.context.packageName)
+            .also { topIconId = it }
         val iv = if (id != 0) root.findViewById<ImageView>(id) else null
         // Only pinned rows show the icon; skip the (vector) drawable construction for the
         // overwhelming majority of rows so scrolling stays cheap.
