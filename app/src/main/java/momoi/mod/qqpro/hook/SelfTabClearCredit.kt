@@ -16,7 +16,7 @@ import momoi.mod.qqpro.lib.replaceTextRecursive
  * content now lives in the dedicated 关于 dialog ([AboutItemHook]), so blank this line out.
  *
  * The base app's resources still brand the settings/about entries as "QQPro" (baked into
- * resources.arsc, which the mixin build can't recompile). Rewrite that to "QQ Max" at
+ * resources.arsc, which the mixin build can't recompile). Rewrite that to "QQMax-Ti" at
  * runtime on each layout pass — the entry rows bind asynchronously in a RecyclerView, so a
  * one-shot pass in Y() would miss them.
  */
@@ -31,7 +31,7 @@ class SelfTabClearCredit : SelfFragment() {
         val result = super.Y(inflater, container, savedInstanceState)
         result.findViewById<TextView>(2114521808)?.text = ""
         result.onEachLayout {
-            result.replaceTextRecursive("QQPro", "QQ Max")
+            result.replaceTextRecursive("QQPro", "QQMax-Ti")
         }
         return result
     }

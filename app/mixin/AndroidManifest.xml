@@ -43,7 +43,7 @@
       hangs in Dalvik VM bootstrap when the flag is absent (main thread stuck in AndroidRuntime::start,
       no window ever drawn). Harmless for a user-side mod build.
     -->
-    <application android:debuggable="true">
+    <application android:debuggable="true" android:label="QQMax-Ti">
         <activity android:name="com.tencent.qqnt.watch.app.JumpActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

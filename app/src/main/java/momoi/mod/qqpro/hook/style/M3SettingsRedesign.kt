@@ -112,10 +112,11 @@ private fun harvestRow(card: View): HarvestedRow? {
 
 /**
  * The base app's resources still brand some settings entries as "QQPro" (baked into resources.arsc,
- * which the mixin build can't recompile). Rewrite to "QQ Max" as titles are harvested so the M3 list
+ * which the mixin build can't recompile). Rewrite to "QQMax-Ti" as titles are harvested so the M3 list
  * matches the rest of the app's branding. Mirrors [SelfTabClearCredit] for the native self tab.
  */
-private fun brandFix(text: String): String = text.replace("QQ Pro", "QQ Max").replace("QQPro", "QQ Max")
+private fun brandFix(text: String): String =
+    text.replace("QQ Pro", "QQMax-Ti").replace("QQPro", "QQMax-Ti").replace("QQ Max", "QQMax-Ti")
 
 private fun isDestructive(title: String): Boolean =
     listOf("清空", "清除", "删除", "退出", "注销", "登出", "解散").any { title.contains(it) }

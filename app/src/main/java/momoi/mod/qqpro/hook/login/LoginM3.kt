@@ -89,7 +89,7 @@ object LoginM3 {
             if (iconId != 0) brand.addView(ImageView(ctx).apply { runCatching { setImageDrawable(ctx.getDrawable(iconId)) } },
                 LinearLayout.LayoutParams(24.dp, 24.dp).apply { rightMargin = 8.dp })
             brand.addView(TextView(ctx).apply {
-                text = "QQ Max"; setTextColor(M3.onSurface); textSize = 19f
+                text = "QQMax-Ti"; setTextColor(M3.onSurface); textSize = 19f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD; gravity = Gravity.CENTER
             })
             column.addView(brand, wrap().apply { bottomMargin = 14.dp })

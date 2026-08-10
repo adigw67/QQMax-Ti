@@ -17,7 +17,7 @@ object SettingsBackup {
         val settings = JSONObject()
         Settings.all.forEach { settings.put(it.key, it.value) }
         return JSONObject().apply {
-            put("app", "QQPro")
+            put("app", "QQMax-Ti")
             put("version", VERSION)
             put("settings", settings)
         }.toString(2)

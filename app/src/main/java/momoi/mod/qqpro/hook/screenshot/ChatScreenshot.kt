@@ -244,9 +244,9 @@ object ChatScreenshot {
         return row
     }
 
-    /** "由 QQ Max 生成" watermark line at the very bottom. */
+    /** "由 QQMax-Ti 生成" watermark line at the very bottom. */
     private fun buildWatermark(ctx: Context): View = TextView(ctx).apply {
-        text = "由 QQ Max 生成"
+        text = "由 QQMax-Ti 生成"
         setTextColor(M3.onSurfaceVariant)
         textSize = 10f
         gravity = Gravity.CENTER

@@ -178,7 +178,7 @@ class 设置页 : SettingsActivity() {
         val root = settingsRoot ?: return
         root.removeAllViews()
         root.content {
-            section("NWear QQ Pro / Max", "by 爅峫 · java30433 · AILIFE")
+            section("QQMax-Ti", "by 爅峫 · java30433 · AILIFE · adigw67")
             for (cat in buildCategories()) {
                 actionCard(cat.title, cat.subtitle) { showCategory(cat) }
             }
@@ -356,7 +356,7 @@ class 设置页 : SettingsActivity() {
             switch("完全重做空间(实验)", "用全新 Material 3 界面从头重做整个空间(QQ空间)前端：动态卡片(主页第3页与个人空间)、个人空间资料头部、评论/回复独立页(底部 M3 输入框可打字或语音)、以及发表说说改为单页直接输入。关闭则保留原生界面(仅上面的顶栏/点赞/小程序等就地微调)。默认关闭(重进空间生效)", Settings.materializeQzone)
             switch("使用增强资料卡", "用全新 Material 风格资料卡替换原资料页，额外显示年龄/生日/星座/地区/签名(从内核获取)，关闭则保留原页面(重进资料页生效)", Settings.useRichProfile)
             switch("Material 设置页面", "把自我页(主页第4页)、好友/群聊设置页重绘为全新 Material 风格(头部卡片+M3列表+主题色开关)，并把改群名/备注/昵称改为 Material 输入弹窗，不再打开全屏键盘页(重进对应页面生效)", Settings.useM3Settings)
-            switch("Material 登录页", "把扫码登录页重绘为全新 Material 风格(QQ Max 品牌+应用图标、加框二维码、M3 状态提示、扫码确认后显示登录账号头像与号码、刷新/手机号登录按钮)，并跳过首次启动的隐私协议确认页。原生登录逻辑不变(下次登录生效)", Settings.materializeLogin)
+            switch("Material 登录页", "把扫码登录页重绘为全新 Material 风格(QQMax-Ti 品牌+应用图标、加框二维码、M3 状态提示、扫码确认后显示登录账号头像与号码、刷新/手机号登录按钮)，并跳过首次启动的隐私协议确认页。原生登录逻辑不变(下次登录生效)", Settings.materializeLogin)
         },
         SettingsCategory("菜单自定义", "长按菜单与附件菜单的排序与显示") {
             section("自定义菜单", "拖动左侧手柄排序；拖到分隔线下方的项目将不再显示。例如可隐藏“翻译/截图/总结/多选”等。")
@@ -474,7 +474,7 @@ class 设置页 : SettingsActivity() {
         },
         SettingsCategory("通话", "语音/视频通话") {
             section("通话", "音视频通话的通知、蓝牙与界面。部分选项重进通话生效。")
-            switch("来电通知修复", "确保来电有通知：QQ 只在后台且未被机型黑名单时才弹来电，且常失败。开启后由 QQ Max 自行弹出高优先级来电通知，带来电人头像/昵称与「接听/拒绝」按钮", Settings.callNotifyFix)
+            switch("来电通知修复", "确保来电有通知：QQ 只在后台且未被机型黑名单时才弹来电，且常失败。开启后由 QQMax-Ti 自行弹出高优先级来电通知，带来电人头像/昵称与「接听/拒绝」按钮", Settings.callNotifyFix)
             switch("使用全屏来电", "来电时直接全屏拉起原生接听界面(类似电话来电)；关闭则只显示带按钮的横幅通知。需开启「来电通知修复」，并授予下方悬浮窗权限(否则安卓10+无法从后台全屏拉起)", Settings.callFullScreenIntent)
             actionCard("授予悬浮窗权限", "允许「全屏来电」在锁屏/后台直接拉起接听界面。未授予时仅显示横幅通知") {
                 runCatching {
@@ -543,7 +543,7 @@ class 设置页 : SettingsActivity() {
             switch("渲染输入框", "截图底部显示空输入框装饰；关闭则不渲染底部输入框", Settings.screenshotInputBar)
             switch("自己显示在左侧", "把自己发送的消息也渲染在左侧(第三方视角)；默认关闭(自己在右)", Settings.screenshotSelfAsOther)
             switch("显示昵称与头像", "截图中显示真实昵称与头像；关闭则匿名化为 A/B/C 与随机色字母头像", Settings.screenshotShowIdentity)
-            switch("生成水印", "在截图底部添加“由 QQ Max 生成”水印", Settings.screenshotWatermark)
+            switch("生成水印", "在截图底部添加“由 QQMax-Ti 生成”水印", Settings.screenshotWatermark)
         },
         SettingsCategory("聊天总结", "用 AI 总结聊天记录") {
             section("聊天总结", "在「菜单自定义 › 长按消息菜单」可显示/隐藏“总结”项。以下选项调整总结的风格与语言。")
@@ -556,8 +556,8 @@ class 设置页 : SettingsActivity() {
             textInput("模型", "使用的模型名，留空用默认", Settings.summarizeApiModel)
         },
         SettingsCategory("关于与更新", "版本更新") {
-            switch("自动检查更新", "启动时检查 QQ Max 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
-            actionCard("立即检查更新", "现在就检查 QQ Max 是否有新版本") {
+            switch("自动检查更新", "启动时检查 QQMax-Ti 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
+            actionCard("立即检查更新", "现在就检查 QQMax-Ti 是否有新版本") {
                 OTAManager2(this@设置页).checkUpdate(true)
             }
             actionCard("关于", "版本信息与致谢") {

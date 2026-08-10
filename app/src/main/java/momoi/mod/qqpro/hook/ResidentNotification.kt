@@ -16,7 +16,7 @@ import momoi.mod.qqpro.util.Utils
 /**
  * 常驻通知 (resident / foreground-service) notification. The native
  * [MsfService.startForegroundCompat] builds it with title "WearQQ" and content "手表QQ正在后台运行".
- * Replace that body so the notification carries ONLY a title ("QQ Max 正在后台运行") and no content
+ * Replace that body so the notification carries ONLY a title ("QQMax-Ti 正在后台运行") and no content
  * line — same gate (allow_notification && resident_notification), channel, icon and click intent.
  *
  * `startForegroundCompat` is private in the target; ApkMixin matches the replacement by signature
@@ -33,7 +33,7 @@ class ResidentNotification : MsfService() {
                 return
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel("WearQQ", "NWear-QQ常驻通知", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                val channel = NotificationChannel("WearQQ", "QQMax-Ti 常驻通知", NotificationManager.IMPORTANCE_DEFAULT).apply {
                     enableLights(false)
                     enableVibration(false)
                     setSound(null, null)
@@ -49,7 +49,7 @@ class ResidentNotification : MsfService() {
             val pi = PendingIntent.getActivity(this, 0, intent, flags)
             // Title only — no setContentText, so the resident notification shows a single line.
             val notif = NotificationCompat.Builder(this, "WearQQ")
-                .setContentTitle("QQ Max 正在后台运行")
+                .setContentTitle("QQMax-Ti 正在后台运行")
                 .setSmallIcon(if (iconId != 0) iconId else android.R.drawable.sym_def_app_icon)
                 .setContentIntent(pi)
                 .build()

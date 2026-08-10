@@ -68,7 +68,7 @@ fun buildAboutView(
         }
 
         add<TextView>()
-            .text("QQ Max")
+            .text("QQMax-Ti")
             .textSize(18f)
             .textColor(M3.onSurface)
             .gravity(Gravity.CENTER)
@@ -87,7 +87,7 @@ fun buildAboutView(
             .padding(bottom = 12.dp)
 
         add<TextView>()
-            .text("NWear QQ · 爅峫\nQQ Pro · java30433\nQQ Max · AILIFE")
+            .text("NWear QQ · 爅峫\nQQ Pro · java30433\nQQ Max · AILIFE\nQQMax-Ti · adigw67")
             .textSize(13f)
             .textColor(M3.onSurfaceVariant)
             .gravity(Gravity.CENTER)

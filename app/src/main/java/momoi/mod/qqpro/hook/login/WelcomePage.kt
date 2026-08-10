@@ -67,16 +67,16 @@ object WelcomeM3 {
                 val icon = ImageView(ctx).apply { runCatching { setImageDrawable(ctx.getDrawable(iconId)) } }
                 column.addView(icon, LinearLayout.LayoutParams(64.dp, 64.dp).apply { bottomMargin = 14.dp })
             }
-            // QQ Max wordmark
+            // QQMax-Ti wordmark
             column.addView(TextView(ctx).apply {
-                text = "QQ Max"
+                text = "QQMax-Ti"
                 setTextColor(M3.onSurface)
                 textSize = 26f
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
             })
             column.addView(TextView(ctx).apply {
-                text = "欢迎使用 QQ Max"
+                text = "欢迎使用 QQMax-Ti"
                 setTextColor(M3.onSurfaceVariant)
                 textSize = 13f
                 gravity = Gravity.CENTER

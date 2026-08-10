@@ -503,7 +503,7 @@ object Settings {
     // Show real nicknames + avatars in the screenshot. Off = anonymize each sender to A/B/C with a
     // random-colored letter avatar. Default on.
     val screenshotShowIdentity = BooleanPref("screenshotShowIdentity", true)
-    // Add a "由 QQ Max 生成" watermark line at the bottom of the screenshot. Default on.
+    // Add a "由 QQMax-Ti 生成" watermark line at the bottom of the screenshot. Default on.
     val screenshotWatermark = BooleanPref("screenshotWatermark", true)
 
     // ===== 调试 =====
