@@ -1,5 +1,7 @@
 package momoi.mod.qqpro
 
+import android.app.Activity
+import android.content.pm.ActivityInfo
 import android.text.Spanned
 import android.util.TypedValue
 import android.view.View
@@ -16,6 +18,19 @@ import momoi.mod.qqpro.lib.vertical
 import java.io.File
 import java.lang.reflect.Method
 import java.util.WeakHashMap
+
+/**
+ * 应用「横屏模式」设置：开启=固定横屏，关闭=固定竖屏，均不跟随传感器自动旋转。
+ * 在主界面（MainActivity）与设置页（SettingsActivity）的 onCreate/onResume 调用，
+ * 切换设置后立即调用可让当前页面马上按新方向重建。
+ */
+fun Activity.applyOrientationSetting() {
+    requestedOrientation = if (Settings.landscapeMode.value) {
+        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    } else {
+        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    }
+}
 
 /**
  * QQ bakes inline face emoji as fixed-size [EmoticonSpan]s (sized to QQ's default chat text size),

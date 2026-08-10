@@ -28,6 +28,7 @@ import androidx.core.widget.doAfterTextChanged
 import com.tencent.widget.Switch
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Pref
+import momoi.mod.qqpro.applyOrientationSetting
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.aio_cell.BubbleCorner
 import momoi.mod.qqpro.hook.aio_cell.GroupAvatarHook
@@ -112,6 +113,9 @@ class 设置页 : SettingsActivity() {
     @SuppressLint("ResourceType", "SetTextI18n", "UseSwitchCompatOrMaterialCode")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 横屏模式：本设置页也跟随开关立即切换方向（onCreate 重建时再确认一次）。
+        runCatching { applyOrientationSetting() }
+            .onFailure { Utils.log("设置页: 横屏模式应用失败: $it") }
 
         // Make this activity translucent + drop the system open/close transition: the SwipeBackLayout's
         // own fade+slide is our transition, and translucency lets a swipe-back reveal the screen
@@ -288,6 +292,10 @@ class 设置页 : SettingsActivity() {
                 listOf("深色", "浅色"),
                 current = { if (Settings.lightMode.value) 1 else 0 }) { which ->
                 Settings.lightMode.value = which == 1
+            }
+            switch("横屏模式", "开启后整个应用固定横屏显示（不跟随传感器自动旋转），关闭固定竖屏。切换后本页与主界面立即按新方向重建。", Settings.landscapeMode) {
+                runCatching { applyOrientationSetting() }
+                    .onFailure { Utils.log("设置页: 横屏模式切换失败: $it") }
             }
             switch("跟随系统主题色", "在支持 Material You 动态取色的设备(Android 12 / API 31 及以上)上，未单独设置的颜色自动取用系统壁纸配色(按明暗基调映射)；单独设置的颜色仍优先。旧系统(多数手表)无动态取色则用内置配色。$note", Settings.followSystemTheme)
             section("联网字体包", "可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用生效，防止生僻字缺失；下载后重启应用全部界面生效")
@@ -602,7 +610,8 @@ class 设置页 : SettingsActivity() {
     private fun GroupScopeFix.switch(
         title: String,
         desc: String,
-        pref: Pref<Boolean>
+        pref: Pref<Boolean>,
+        onChange: ((Boolean) -> Unit)? = null,
     ) = card { card ->
         card.content {
             titleColumn(title, desc).weight(1f)
@@ -610,7 +619,7 @@ class 设置页 : SettingsActivity() {
             // native toggle so it follows the user's theme color.
             val sw = M3Switch(this@设置页)
             sw.setChecked(pref.value, notify = false)
-            sw.onChange = { pref.value = it }
+            sw.onChange = { pref.value = it; onChange?.invoke(it) }
             add(sw)
         }
     }

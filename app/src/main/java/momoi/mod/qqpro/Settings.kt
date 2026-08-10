@@ -140,6 +140,9 @@ object Settings {
     // Show the system status bar (time/battery) instead of the app's fullscreen window; content is
     // inset below it (edge-to-edge safe on Android 15+). Default off. Applied in StatusBarOption.
     val showStatusBar = BooleanPref("showStatusBar", false)
+    // 横屏模式：开启后整个应用固定横屏显示（不跟随传感器自动旋转），关闭固定竖屏。
+    // 默认关闭。在设置里切换后，主界面与本设置页立即按新方向重建。
+    val landscapeMode = BooleanPref("landscapeMode", false)
     val backToFirstPage = BooleanPref("backToFirstPage", true)
     // When tapping a reply to jump to its source message, drop the page-load cap (normally ~1000
     // pages) and keep paging up until the source is found or the top of history is reached. Lets
