@@ -3,12 +3,10 @@ import momoi.mod.qqpro.lib.setElevationCompat
 
 import android.content.Context
 import android.graphics.drawable.GradientDrawable
-import android.text.InputType
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -178,10 +176,9 @@ object RichProfilePage {
             card.addView(rows)
             content.addView(card)
 
-            // 禁言特定成员（仅群主/管理员可见；服务端权限受限时提示结果）。
-            // 放在头部卡片正下方而不是按钮之后：资料卡内容超过一屏时，
-            // 排最后会滚到屏幕外，用户看不到「执行」按钮。
-            if (fromGroup && uid.isNotEmpty()) addMemberMuteRow(ctx, content, uid)
+            // 禁言特定成员（仅群主/管理员可见）：资料卡上只放一个按钮，
+            // 点开单独整页输入 天/时/分 并执行——手表屏窄，内联横排会把按钮挤出屏幕。
+            if (fromGroup && uid.isNotEmpty()) addMemberMuteButton(ctx, content, uid, displayName)
 
             if (uid.isNotEmpty()) {
                 ProfileDetailCard.fetch(uid) { info ->
@@ -260,60 +257,32 @@ object RichProfilePage {
         }.onFailure { Utils.log("RichProfilePage.build error: $it") }
     }
 
-    /** 群主/管理员在群成员资料卡上禁言该成员（天/时/分 + 执行）。 */
-    private fun addMemberMuteRow(ctx: Context, content: LinearLayout, memberUid: String) {
+    /** 群主/管理员在群成员资料卡上显示「禁言成员」按钮，点击打开独立整页。 */
+    private fun addMemberMuteButton(
+        ctx: Context,
+        content: LinearLayout,
+        memberUid: String,
+        memberName: String,
+    ) {
         CurrentGroupMembers.get(SelfContact.peerUid) { self ->
             val privileged = self.role == MemberRole.OWNER || self.role == MemberRole.ADMIN
             Utils.log("RichProfilePage mute row: member=$memberUid selfRole=${self.role} show=$privileged")
             if (!privileged) return@get
             content.post {
                 runCatching {
-                    fun label(t: String) = TextView(ctx).apply {
-                        text = t
-                        setTextColor(M3.onSurface)
-                        textSize = 12f
-                        setPadding(4.dp, 0, 4.dp, 0)
-                    }
-                    fun num() = EditText(ctx).apply {
-                        textSize = 12f
-                        setTextColor(M3.onSurface)
-                        inputType = InputType.TYPE_CLASS_NUMBER
-                        gravity = Gravity.CENTER
-                        setBackgroundColor(M3.surfaceContainerHigh)
-                        layoutParams = LinearLayout.LayoutParams(46.dp, 30.dp)
-                    }
-                    val row = LinearLayout(ctx).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ).apply { topMargin = 10.dp }
-                    }
-                    row.addView(label("禁言"))
-                    val d = num(); row.addView(d); row.addView(label("天"))
-                    val h = num(); row.addView(h); row.addView(label("时"))
-                    val m = num(); row.addView(m); row.addView(label("分"))
-                    val exec = M3Button(ctx).apply {
-                        text = "执行"
-                        variant(M3Button.Variant.FILLED)
-                        setOnClickListener {
-                            val days = d.text.toString().toIntOrNull() ?: 0
-                            val hours = h.text.toString().toIntOrNull() ?: 0
-                            val minutes = m.text.toString().toIntOrNull() ?: 0
-                            val seconds = (days * 24 + hours) * 60 + minutes * 60
-                            if (seconds <= 0) {
-                                Utils.toast(ctx, "请输入禁言时长")
-                                return@setOnClickListener
+                    content.addView(
+                        M3Button(ctx).apply {
+                            text = "禁言成员"
+                            leadingSymbol(MaterialSymbols.volume_off, M3.onPrimary, sizeDp = 18)
+                            variant(M3Button.Variant.FILLED)
+                            setOnClickListener {
+                                MemberMutePage.show(ctx, memberUid, memberName)
                             }
-                            GroupMute.setMemberMuted(CurrentContact.peerUid, memberUid, seconds) { ok, msg ->
-                                runOnUi {
-                                    Utils.toast(ctx, if (ok) "已禁言 ${days}天${hours}时${minutes}分" else "禁言失败 $msg")
-                                }
-                            }
-                        }
-                    }
-                    row.addView(exec, LinearLayout.LayoutParams(70.dp, 34.dp).apply { leftMargin = 6.dp })
-                    content.addView(row)
+                        },
+                        LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, 40.dp,
+                        ).apply { topMargin = 10.dp },
+                    )
                 }.onFailure { Utils.log("RichProfilePage mute row failed: $it") }
             }
         }

@@ -11,17 +11,16 @@
 | 5 | 说说不能添加表情 | qzone 发布页 | 待修复 |
 | 6 | 聊天页不能显示群/好友名称 | `RichTitlebar.kt`（setElevation） | ✅ v9 已修并实测（群名+成员数正常显示） |
 | 7 | mitu4 主界面顶部部分没有显示 | 主框架顶部区域 | 待修复 |
-| 8 | 不能禁言特定用户 | `RichProfilePage.kt`、`GroupMute.kt` | ✅ v10 已加入口（群主/管理员可见）；服务端 -10122 待实测 |
+| 8 | 不能禁言特定用户 | `RichProfilePage.kt`、`GroupMute.kt`、`MemberMutePage.kt` | ❌ 服务端限制：`setMemberShutUp`（OIDB 0x1253）返回 -10122 "Product does not have permission"——手表产品无此权限，客户端不可修复；v16.3 已做成“资料卡按钮 + 独立整页”（按钮不再被挤出屏幕）并加明确提示；全员禁言 `setGroupShutUp` 可用 |
 | 9 | 头衔等级框有概率不显示 | `RichProfilePage.kt`（setElevation） | ✅ v9 已修资料卡崩溃，实测打开正常；显示概率问题待观察 |
 | 10 | 多选会黑屏 | `ChatMultiSelect.kt` | ✅ v13 已修并实测（Canvas.drawRoundRect 7 参是 API 21+，API 19 上 onDrawOver 崩 → 改 RectF） |
 | 11 | 不能发起音视频通话（卡死） | `call/CallAudio.kt`（AudioDeviceCallback API 23+） | ✅ v8 已修，待真机发起通话验证 |
 | 12 | 点击回复卡片跳转时卡死 | `view/SmoothScrollTo.kt` | ✅ v16.2 已修并定位：跳转后的高亮用 View.setForeground（API 23+），API 19 上 NoSuchMethodError 崩主线程 → 低版本改行 alpha 脉冲 |
-| 13 | 收到的图片全部白框损坏、发不出图片 | 图片下载/上传链路 | 🔶 部分修复：v16.2 已打开内核图片自动下载开关（原配置返回空 → xg_auto_download=false，图片从不下载）；下载已能触发，但内核下载器报 1003008（拿不到有效 rkey/URL，原生链路），发图路径待实测，疑似会话/网络问题 |
+| 13 | 收到的图片全部白框损坏、发不出图片 | 图片下载/上传链路 | ✅ 已修复（v16.2 打开内核自动下载开关 + 会话恢复后实测正常；根因含内核 xg_auto_download=false 与富媒体会话鉴权过期） |
 
 ## 说明
 
 - 已修并实测：2（v16.2）、3（v11+v15）、6（v9）、10（v13）、12（v16.2）；
-- 已修待实测：8（v10+v15 按钮可见）、9（v9）、11（v8）；
-- 部分修复：13（v16.2 下载开关已打开，1003008 待排查）；
+- 已修待实测：9（v9）、11（v8）；
 - 待修复：1 / 4 / 5 / 7；
 - 每个 bug 修复后：重新构建 → 打多 dex 补丁 → 组装 → 装机验证 → 更新本文件与安装包。

@@ -94,7 +94,14 @@ object GroupMute {
                 ),
             ) { c, m ->
                 Utils.log("GroupMute: setMemberShutUp code=$c msg=$m gc=$code uid=$memberUid sec=$seconds")
-                onResult(c == 0, if (c == 0) "" else "$c $m")
+                onResult(
+                    c == 0,
+                    if (c == 0) "" else if (c == -10122) {
+                        "手表版无禁言成员权限（服务端限制），可改用全员禁言"
+                    } else {
+                        "$c $m"
+                    },
+                )
             }
         }.onFailure {
             Utils.log("GroupMute: setMemberShutUp threw: $it")
