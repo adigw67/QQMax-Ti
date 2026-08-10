@@ -98,9 +98,9 @@ fun resolveLinkColor(baseTextColor: Int): Int =
  */
 private abstract class ColoredClickableSpan : ClickableSpan() {
     override fun updateDrawState(ds: android.text.TextPaint) {
-        val base = ds.color
         super.updateDrawState(ds)
-        ds.color = resolveLinkColor(base)
+        // 与 @成员/号码统一：链接颜色 = 用户设置的 linkColor，留空 = M3 主题色。
+        ds.color = linkColorResolved()
     }
 }
 

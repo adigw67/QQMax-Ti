@@ -19,7 +19,7 @@ import momoi.mod.qqpro.hook.action.SelfContact
 import momoi.mod.qqpro.hook.action.isGroup
 import momoi.mod.qqpro.lib.material.M3
 import momoi.mod.qqpro.util.Utils
-import momoi.mod.qqpro.util.resolveLinkColor
+import momoi.mod.qqpro.util.linkColorResolved
 import mqq.app.MobileQQ
 
 // Default link color for tappable @member spans (also reused for clickable grey-tip member names
@@ -157,8 +157,9 @@ internal interface MentionSpan
 private fun memberSpan(member: MemberInfo, isSelf: Boolean): ClickableSpan = object : ClickableSpan(), MentionSpan {
     override fun onClick(widget: View) = widget.openMemberProfile(member)
     override fun updateDrawState(ds: TextPaint) {
-        // Resolve against the current (body) text color so the @mention contrasts its own bubble.
-        ds.color = if (isSelf) M3.error else resolveLinkColor(ds.color)
+        // 与链接/号码统一用 linkColorResolved（用户设置的链接颜色，留空=M3 主题色）；
+        // @自己仍用错误色高亮（设置开关控制）。
+        ds.color = if (isSelf) M3.error else linkColorResolved()
         ds.isUnderlineText = false
     }
 }
@@ -256,4 +257,3 @@ fun TextView.parseAtMembers() {
         movementMethod = LinkMovementMethod.getInstance()
     }
 }
-

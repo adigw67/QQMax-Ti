@@ -91,6 +91,11 @@ object AIOCell {
     private fun resolveMsgTextColor(loc: Int): Int {
         val side = if (loc == 0) Settings.textColor else Settings.textColorSelf
         parseHexColor(side.value)?.let { return it }
+        // 自己的消息：深色模式白色、浅色模式黑色（用户显式设置过文字颜色则优先）。
+        // 自动对比色对半透明 primaryContainer 的亮度判断不可靠（忽略 alpha），这里按模式直接定。
+        if (loc != 0) {
+            return if (Settings.lightMode.value) 0xFF_000000.toInt() else 0xFF_FFFFFF.toInt()
+        }
         return M3.onColor(BubbleCorner.resolvedBubbleColor(loc))
     }
 

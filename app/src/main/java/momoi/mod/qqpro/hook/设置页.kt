@@ -336,6 +336,47 @@ class 设置页 : SettingsActivity() {
             colorPicker("描边 Outline", "边框/分隔线", Settings.themeOutline, MaterialColors.ON, { M3.outline }, note)
             colorPicker("描边变体 Outline Variant", "次级边框", Settings.themeOutlineVariant, MaterialColors.SURFACE, { M3.outlineVariant }, note)
             colorPicker("错误色 Error", "错误/危险操作/未读红标", Settings.themeError, MaterialColors.ERROR, { M3.error }, note)
+            section("预设配色", "一键套用常用主题色：自动清除自定义颜色，容器/前景等派生色随主题色重新生成")
+            card { card ->
+                card.content {
+                    val presets = arrayOf(
+                        "#1976D2" to "经典蓝", "#3F51B5" to "靛蓝", "#6750A4" to "紫罗兰", "#00897B" to "青绿",
+                        "#2E7D32" to "草绿", "#E86A17" to "橙", "#B3261E" to "红", "#C2185B" to "玫粉",
+                    )
+                    fun applyPreset(hex: String, name: String) {
+                        Settings.themeTokens.forEach { it.value = "" }
+                        Settings.themeColor.value = hex
+                        Utils.toast(this@设置页, "已应用预设：$name（重进页面生效）")
+                        showCategoryList()
+                    }
+                    for (r in 0 until 2) {
+                        val row = LinearLayout(this@设置页).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            gravity = Gravity.CENTER
+                            layoutParams = LinearLayout.LayoutParams(FILL, WRAP)
+                        }
+                        for (c in 0 until 4) {
+                            val (hex, name) = presets[r * 4 + c]
+                            val sw = View(this@设置页).apply {
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.OVAL
+                                    setColor(M3.parseColor(hex, M3.primary))
+                                    setStroke(2.dp, M3.onSurfaceVariant)
+                                }
+                                setOnClickListener { applyPreset(hex, name) }
+                                contentDescription = name
+                            }
+                            row.addView(sw, LinearLayout.LayoutParams(34.dp, 34.dp).apply {
+                                weight = 1f
+                                gravity = Gravity.CENTER_HORIZONTAL
+                                topMargin = 8.dp
+                                bottomMargin = 8.dp
+                            })
+                        }
+                        add(row)
+                    }
+                }
+            }
             actionCard("恢复默认配色", "清除以上所有自定义颜色，恢复内置 M3 配色") {
                 Settings.themeTokens.forEach { it.value = "" }
                 Utils.toast(this@设置页, "已恢复默认配色，重进页面生效")
