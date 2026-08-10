@@ -129,7 +129,7 @@ object RichTitlebar {
                 }
                 // Render QQ sysface codes in the name into face glyphs (a plain TextView shows the
                 // raw codes as □ boxes), sized to the 13sp title.
-                text = renderQQFaces(name, 13)
+                text = FontPack.fallback(renderQQFaces(name, 13))
             }
             val countTv = TextView(ctx).apply {
                 setTextColor(M3.onSurface)

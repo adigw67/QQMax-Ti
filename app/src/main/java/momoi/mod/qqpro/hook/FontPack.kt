@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.graphics.Typeface
 import android.text.Spannable
 import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextPaint
 import android.text.style.MetricAffectingSpan
 import android.util.SparseArray
@@ -140,19 +141,43 @@ object FontPack {
         val mi = miTypeface ?: return
         val bold = boldTypeface ?: mi
         if (root is TextView) {
-            val cur = root.typeface
-            val target = when {
-                cur == null || cur == originalDefault || cur == Typeface.DEFAULT -> mi
-                cur == originalDefaultBold || cur == Typeface.DEFAULT_BOLD -> bold
-                else -> originalFamilies.entries.firstOrNull { it.value == cur }?.let {
-                    if (it.key.contains("bold") || it.key.contains("medium")) bold else mi
+            val text = root.text
+            if (text.isNullOrEmpty()) {
+                // 空文本先不动：内核可能在绑定/刷新时再写入含生僻字的内容，
+                // 提前换成 MiSans 字型会把系统兜底链断掉（关键界面在绑定处另行兜底）。
+            } else if (coversAll(text)) {
+                // 全部覆盖：直接换 MiSans 字型（性能最好）。
+                val cur = root.typeface
+                val target = when {
+                    cur == null || cur == originalDefault || cur == Typeface.DEFAULT -> mi
+                    cur == originalDefaultBold || cur == Typeface.DEFAULT_BOLD -> bold
+                    else -> originalFamilies.entries.firstOrNull { it.value == cur }?.let {
+                        if (it.key.contains("bold") || it.key.contains("medium")) bold else mi
+                    }
                 }
+                if (target != null && cur != target) root.typeface = target
+            } else {
+                // 有 MiSans 未覆盖的码位（生僻字/扩展区等）：逐字兜底 span，不改视图字型，
+                // 保留系统兜底链作为最后防线。
+                root.text = fallback(text)
             }
-            if (target != null && cur != target) root.typeface = target
         }
         if (root is ViewGroup) {
             for (i in 0 until root.childCount) applyAll(root.getChildAt(i))
         }
+    }
+
+    /** MiSans 是否覆盖 [text] 的全部码位。 */
+    fun coversAll(text: CharSequence): Boolean {
+        val cover = miCoverage ?: return false
+        if (text.isEmpty()) return true
+        var i = 0
+        while (i < text.length) {
+            val cp = Character.codePointAt(text, i)
+            if (!cover.has(cp)) return false
+            i += Character.charCount(cp)
+        }
+        return true
     }
 
     private fun setStatic(cls: Class<*>, name: String, value: Any) {
@@ -167,6 +192,8 @@ object FontPack {
      */
     fun fallback(text: CharSequence): CharSequence {
         if (!installed() || text.isEmpty()) return text
+        // 幂等：已包过兜底 span 的直接返回，避免重复包装叠加。
+        if (text is Spanned && text.getSpans(0, text.length, FontSpan::class.java).isNotEmpty()) return text
         val mi = miTypeface ?: return text
         val uni = uniTypeface ?: return text
         val cover = miCoverage ?: return text

@@ -21,6 +21,7 @@ import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.fitEmojiSpans
 import momoi.mod.qqpro.renderQQFaces
 import momoi.mod.qqpro.hook.ChatMultiSelect
+import momoi.mod.qqpro.hook.FontPack
 import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.hook.action.CurrentGroupMembers
 import momoi.mod.qqpro.hook.action.CurrentMsgList
@@ -63,6 +64,8 @@ object AIOCell {
         fun walk(v: View) {
             if (v is TextView) {
                 v.setTextColor(color)
+                // 字体包启用时逐字兜底（MiSans 未覆盖的生僻字用 Unifont），幂等包装。
+                v.text = FontPack.fallback(v.text)
                 // Keep any Material-symbol icon (e.g. the call-record phone/video icon) matched to the
                 // message text color, including custom overrides.
                 (v.compoundDrawables.asSequence() + v.compoundDrawablesRelative.asSequence())

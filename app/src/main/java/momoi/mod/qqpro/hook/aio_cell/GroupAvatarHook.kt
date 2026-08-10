@@ -25,6 +25,7 @@ import download
 import momoi.mod.qqpro.Colors
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.child
+import momoi.mod.qqpro.hook.FontPack
 import momoi.mod.qqpro.hook.action.SelfContact
 import momoi.mod.qqpro.lib.RadiusBackgroundSpan
 import momoi.mod.qqpro.lib.dp
@@ -260,7 +261,7 @@ object GroupAvatarHook {
                     else Utils.application.resources.displayMetrics.widthPixels
                 // Leave a small trailing gap so a long name never kisses the right edge.
                 val avail = basis - nickView.paddingLeft - nickView.paddingRight - avatarReserve - 8.dp
-                nickView.text = member.twoLineNick(name, nickView.paint, avail)
+                nickView.text = FontPack.fallback(member.twoLineNick(name, nickView.paint, avail))
             }
             applyText()
             // Re-run once the real cell width is known (first layout after a fresh bind), so a
@@ -270,7 +271,7 @@ object GroupAvatarHook {
             nickView.maxLines = 1
             nickView.gravity = Gravity.START
             nickView.setPaddingRelative(nickView.paddingStart, 0, nickView.paddingEnd, nickView.paddingBottom)
-            nickView.text = member.oneLineNick(name)
+            nickView.text = FontPack.fallback(member.oneLineNick(name))
         }
     }
 

@@ -13,6 +13,7 @@ import com.tencent.qqnt.watch.chat.list.WatchRecentItemBuilder
 import com.tencent.qqnt.watch.chat.ui.ChatListFragment
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.hook.FontPack
 import momoi.mod.qqpro.lib.material.M3
 import momoi.mod.qqpro.lib.material.MaterialSymbol
 import momoi.mod.qqpro.lib.material.MaterialSymbols
@@ -32,6 +33,16 @@ fun materializeChatRow(holder: WatchRecentContactHolder) {
         b.d.setTextColor(M3.onSurfaceTip)      // time
         b.e.setTextColor(M3.onSurfaceVariant)  // preview / last message
     }.onFailure { Utils.log("materializeChatRow failed: $it") }
+}
+
+/** 字体包启用时，对会话行标题/预览做逐字兜底（MiSans 未覆盖的生僻字用 Unifont）。 */
+fun fontWrapChatRow(holder: WatchRecentContactHolder) {
+    if (!FontPack.installed()) return
+    runCatching {
+        val b = holder.b
+        b.c.text = FontPack.fallback(b.c.text) // 标题（群名/备注）
+        b.e.text = FontPack.fallback(b.e.text) // 预览（最后一条消息）
+    }.onFailure { Utils.log("fontWrapChatRow failed: $it") }
 }
 
 /** Material background for the conversation-list page (replaces the native bg_blue with M3.surface). */
@@ -192,6 +203,7 @@ object RecentContacts {
             super.t(item, holder)
             swapPinIcon(holder)
             materializeChatRow(holder)
+            fontWrapChatRow(holder)
             applyRecentOnlineBadge(holder, item)
         }
 
@@ -203,6 +215,7 @@ object RecentContacts {
         override fun q(item: RecentContactChatItem, holder: WatchRecentContactHolder) {
             sanitizeItem(item)
             super.q(item, holder)
+            fontWrapChatRow(holder)
         }
 
         /** Partial-bind dispatcher also calls setText directly when a payload list is present. */
@@ -213,6 +226,7 @@ object RecentContacts {
         ) {
             sanitizeItem(item)
             super.m(holder, item, payload)
+            if (holder is WatchRecentContactHolder) fontWrapChatRow(holder)
         }
     }
 }
