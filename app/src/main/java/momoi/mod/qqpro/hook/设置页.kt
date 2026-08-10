@@ -82,6 +82,7 @@ private const val REQ_IMPORT_SETTINGS = 0x9B02
 // Kept at file scope (not a @Mixin field — those can't have initializers) so
 // onActivityResult can refresh the picker's status text after picking/clearing.
 private var bgStatusLabel: TextView? = null
+private var fontStatusLabel: TextView? = null
 
 // Two-level navigation state, also at file scope to avoid @Mixin field initializers.
 // The level-1 category list ([settingsRoot] inside [settingsScroll]) stays PERSISTENT in the
@@ -282,6 +283,30 @@ class 设置页 : SettingsActivity() {
                 Settings.lightMode.value = which == 1
             }
             switch("跟随系统主题色", "在支持 Material You 动态取色的设备(Android 12 / API 31 及以上)上，未单独设置的颜色自动取用系统壁纸配色(按明暗基调映射)；单独设置的颜色仍优先。旧系统(多数手表)无动态取色则用内置配色。$note", Settings.followSystemTheme)
+            section("联网字体包", "可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用生效，防止生僻字缺失；下载后重启应用全部界面生效")
+            switch("启用联网字体包", "默认关闭；下载字体包后开启，应用内文字优先用 MiSans 渲染", Settings.fontPackEnabled)
+            card { card ->
+                card.vertical()
+                card.content {
+                    titleColumn("字体包状态", "MiSans 官方 hyperos.mi.com + Unifont 官方 GNU 镜像").width(FILL)
+                    fontStatusLabel = add<TextView>()
+                        .textSize(11f)
+                        .textColor(M3.onSurfaceVariant)
+                        .padding(top = 4.dp)
+                    fontStatusLabel?.text = FontPack.statusText()
+                }
+            }
+            actionCard("下载字体包", "只拉取 MiSans Regular/Bold（约 11MB）与 Unifont（约 5MB），仅需一次") {
+                FontPack.download { s ->
+                    fontStatusLabel?.text = s
+                    Utils.toast(this@设置页, s, longDuration = true)
+                }
+            }
+            actionCard("清除字体包", "删除已下载字体；进程内已替换的字体需重启应用恢复") {
+                FontPack.clear()
+                fontStatusLabel?.text = FontPack.statusText()
+                Utils.toast(this@设置页, "已清除，重启应用后恢复系统字体")
+            }
             colorPicker("主题色 Primary", "主强调色：按钮/开关/链接/高亮；跟随系统时留空自动取系统色", Settings.themeColor, MaterialColors.ACCENT, { M3.primary }, note)
             colorPicker("主色前景 On Primary", "强调色上的文字/图标，留空自动", Settings.themeOnPrimary, MaterialColors.ON, { M3.onPrimary }, note)
             colorPicker("主色容器 Primary Container", "次级强调表面，留空由主题色生成", Settings.themePrimaryContainer, MaterialColors.ACCENT, { M3.primaryContainer }, note)

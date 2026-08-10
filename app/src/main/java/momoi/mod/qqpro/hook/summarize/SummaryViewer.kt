@@ -10,6 +10,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.hook.FontPack
 import momoi.mod.qqpro.hook.forwardText
 import momoi.mod.qqpro.hook.view.MyDialogFragment
 import momoi.mod.qqpro.hook.view.PartialCopyFragment
@@ -193,7 +194,7 @@ class SummaryViewer private constructor(
     /** Stored / finished content view: hide spinner, render text, reveal actions. */
     private fun showLoaded() {
         (spinner.parent as? View)?.visibility = View.GONE
-        bodyView.text = Markdown.render(sb.toString())
+        bodyView.text = FontPack.fallback(Markdown.render(sb.toString()))
         actionBar.visibility = View.VISIBLE
         // Land at the start of the summary (streaming auto-scrolled to the bottom to follow the text).
         scroll.post { scroll.scrollTo(0, 0) }
@@ -209,7 +210,7 @@ class SummaryViewer private constructor(
                     (spinner.parent as? View)?.visibility = View.GONE
                 }
                 sb.append(fragment)
-                bodyView.text = Markdown.render(sb.toString())
+                bodyView.text = FontPack.fallback(Markdown.render(sb.toString()))
                 scroll.post { if (active) scroll.fullScroll(View.FOCUS_DOWN) }
             }
 

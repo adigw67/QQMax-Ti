@@ -30,6 +30,9 @@ class 更新检查 : MainActivity() {
         }
         super.onCreate(savedInstanceState)
         Watchdog.install(this)
+        // 可选联网字体包：已下载且启用时，把进程内默认字体替换为 MiSans（Unifont 兜底）。
+        // 在 UI 构建前应用，之后创建的 TextView 全部生效。
+        FontPack.applyDefaults()
         // 图片自动下载开关覆盖（内核按 UIConfig 键向 Java 要配置，原版返回空串导致收到的图片
         // 永不下载）。放在 MainActivity 启动后，QAutoInject 已填充处理器表，此时覆盖生效。
         PicAutoDownload.install()

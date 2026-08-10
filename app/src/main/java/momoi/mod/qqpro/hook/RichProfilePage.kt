@@ -111,7 +111,9 @@ object RichProfilePage {
             // QQ sysface emoji in the name still render. This is the displayed name (= group card name
             // 群名片 in a group context).
             val nameView = TextView(ctx).apply {
-                text = runCatching { QQText(displayName, 19, 13, null) as CharSequence }.getOrDefault(displayName)
+                text = FontPack.fallback(
+                    runCatching { QQText(displayName, 19, 13, null) as CharSequence }.getOrDefault(displayName)
+                )
                 textSize = 15f
                 setTextColor(M3.onSurface)
                 gravity = Gravity.CENTER
@@ -187,7 +189,9 @@ object RichProfilePage {
                         // Real nickname line (group card vs real nick).
                         val real = info.coreNick.trim()
                         if (real.isNotEmpty() && real != displayName.trim()) {
-                            realNickView.text = runCatching { QQText(real, 19, 11, null) as CharSequence }.getOrDefault(real)
+                            realNickView.text = FontPack.fallback(
+                                runCatching { QQText(real, 19, 11, null) as CharSequence }.getOrDefault(real)
+                            )
                             realNickView.setOnLongClickListener { Utils.copyToClipboard(ctx, real, "已复制昵称"); true }
                             realNickView.visibility = View.VISIBLE
                         }
