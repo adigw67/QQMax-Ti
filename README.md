@@ -55,12 +55,6 @@ QQProMax-M2.5-4.4-发布包/
 - `app/src/main/java/com/tencent/` 下的文件是本项目**自行编写**的 hook 桩/替换类（用于在编译期"借用" QQ 类名），不是腾讯原码；
 - 构建时需要自行准备原版 QQ 手表 APK 并放到 `app/mixin/source.apk`（见 `文档/BUILD.md`）。
 
-## 安装
-
-1. 把 `安装包/QQMax-Ti_M2.5-4.4-API19fix-v21.apk` 传到手表（`adb install -r` 或直接拷贝到手表存储点击安装）；
-2. 首次启动会做 5 个 dex 的提取与优化（老手表约 2~5 分钟，属正常）；
-3. 进入「QQ Max」欢迎页 → 扫码登录。
-
 ## 已知问题
 
 当前有 11 个待修复 bug（详见 `文档/KNOWN-BUGS.md`），修复后将更新安装包并重新打包。
