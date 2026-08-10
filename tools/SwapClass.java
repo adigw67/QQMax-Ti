@@ -35,6 +35,7 @@ public class SwapClass {
             if (types.contains(c.getType())) { out.add(replacement); replaced++; }
             else out.add(c);
         }
+        if (replaced == 0) throw new IllegalStateException("target class not found in target dex: " + types);
         System.out.println("replaced=" + replaced + " targetClasses=" + target.getClasses().size());
         File outDir = new File(args[2] + ".dir").getAbsoluteFile();
         outDir.mkdirs();

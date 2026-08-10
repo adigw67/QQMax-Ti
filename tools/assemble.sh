@@ -66,8 +66,11 @@ done
 BOOST_DEX="${BOOST_DEX:?mixinDex 中找不到 BoostMultiDex}"
 WATCH_DEX="${WATCH_DEX:?mixinDex 中找不到 WatchApplication}"
 java -cp "$CP" SwapClass "$BOOST_DEX" "$OLD_DIR/classes.dex" "$WORK/boost.dex" 'Lcom/bytedance/boost_multidex/BoostMultiDex;'
-java -cp "$CP" SwapClass "$WATCH_DEX" "$OLD_DIR/classes.dex" "$WORK/watch.dex" 'Lcom/tencent/qqnt/watch/app/WatchApplication;'
+# 关键：必须先落盘 boost.dex 再处理 WatchApplication——两个 SwapClass 都读的是同一个
+# classes2.dex，若先跑完两个 java 再统一 mv，第二个 mv 会把第一个的空壳覆盖回真库
+# （v19/v20 的冷启动卡死/ANR 正是这个顺序 bug 导致 OptimizeService 仍在运行）。
 mv "$WORK/boost.dex" "$BOOST_DEX"
+java -cp "$CP" SwapClass "$WATCH_DEX" "$OLD_DIR/classes.dex" "$WORK/watch.dex" 'Lcom/tencent/qqnt/watch/app/WatchApplication;'
 mv "$WORK/watch.dex" "$WATCH_DEX"
 find "$MIXIN_DIR" -maxdepth 1 -name '*.dir' -exec rm -rf {} +
 
