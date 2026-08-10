@@ -145,6 +145,7 @@ object LongPressMenu {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(18.dp, 12.dp, 18.dp, 12.dp)
+            setMinimumHeight(56.dp)  // MD3 菜单项最小触控高度
             isClickable = true
             background = if (material) {
                 M3.ripple(null, 0x33_888888)
@@ -159,9 +160,9 @@ object LongPressMenu {
                 }
             }
             addView(ImageView(ctx).apply { setImageDrawable(MaterialSymbol(e.symbol, tint)) },
-                LinearLayout.LayoutParams(22.dp, 22.dp))
+                LinearLayout.LayoutParams(24.dp, 24.dp))  // MD3 菜单项前导图标 24dp
             addView(TextView(ctx).apply { text = e.label; setTextColor(textColor); textSize = 15f },
-                LinearLayout.LayoutParams(0, WC, 1f).apply { marginStart = 16.dp })
+                LinearLayout.LayoutParams(0, WC, 1f).apply { marginStart = 18.dp })
         }
     }
 

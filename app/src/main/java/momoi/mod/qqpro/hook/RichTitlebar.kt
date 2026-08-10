@@ -116,7 +116,8 @@ object RichTitlebar {
             }
             val nameTv = TextView(ctx).apply {
                 setTextColor(M3.onSurface)
-                textSize = 13f
+                textSize = 15f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
                 isSingleLine = true
                 if (Settings.titlebarMarquee.value) {
                     // Scroll the over-long name instead of clamping it with an ellipsis. Marquee
@@ -128,12 +129,13 @@ object RichTitlebar {
                     ellipsize = TextUtils.TruncateAt.END
                 }
                 // Render QQ sysface codes in the name into face glyphs (a plain TextView shows the
-                // raw codes as □ boxes), sized to the 13sp title.
-                text = FontPack.fallback(renderQQFaces(name, 13))
+                // raw codes as □ boxes), sized to the 15sp title.
+                text = FontPack.fallback(renderQQFaces(name, 15))
             }
             val countTv = TextView(ctx).apply {
                 setTextColor(M3.onSurface)
-                textSize = 13f
+                textSize = 15f
+                typeface = android.graphics.Typeface.DEFAULT_BOLD
                 isSingleLine = true
                 text = ""
             }
@@ -181,15 +183,11 @@ object RichTitlebar {
                 // No elevation on this API 19 watch — pull the bar in front explicitly after attach.
                 bar.post { bar.bringToFront() }
             }
-            // Material surface gradient behind the title: fully opaque surface at the top fading to
-            // transparent at the bottom, so chat content scrolling up disappears gradually behind the
-            // bar (bottom→top fade) while the title/badge stay readable. Uses the M3 surface token.
-            val surfaceTop = M3.surface or 0xFF_000000.toInt()
-            val surfaceBottom = if (Settings.titlebarGradient.value) M3.surface and 0x00_FFFFFF else surfaceTop
-            bar.background = android.graphics.drawable.GradientDrawable(
-                android.graphics.drawable.GradientDrawable.Orientation.TOP_BOTTOM,
-                intArrayOf(surfaceTop, surfaceBottom)
-            )
+            // 纯色 M3 surface 背景：底部已有 1dp 分隔线（边缘线），不再用渐变淡出。
+            bar.background = android.graphics.drawable.ColorDrawable(M3.surface)
+            // MD3 顶栏：底部一条 1dp outlineVariant 分隔线，把标题栏与消息区区分开。
+            bar.addView(View(ctx).apply { setBackgroundColor(M3.outlineVariant) },
+                FrameLayout.LayoutParams(FILL, 1.dp, Gravity.BOTTOM))
             // Same horizontal inset as the input pill (chat base inset + corner) on both sides.
             bar.addView(row, FrameLayout.LayoutParams(FILL, FILL).apply {
                 leftMargin = sideMargin; rightMargin = sideMargin

@@ -33,12 +33,13 @@ object BubbleCorner {
 
     /**
      * The effective bubble fill color for a side: the user's per-side override, else the Material
-     * token (loc==0 → other → surfaceContainer; else → self → primary). Shared so the message text
+     * token (loc==0 → other → surfaceContainerLow; else → self → primaryContainer). MD3 对话气泡
+     * 用 tonal 容器色：对方 surfaceContainerLow、自己 primaryContainer。Shared so the message text
      * color can auto-contrast against it (see [AIOCell.applyMsgTextStyle]).
      */
     fun resolvedBubbleColor(loc: Int): Int {
         val override = if (loc == 0) Settings.bubbleColorOther else Settings.bubbleColorSelf
-        return parseHexColor(override.value) ?: (if (loc == 0) M3.surfaceContainer else M3.primary)
+        return parseHexColor(override.value) ?: (if (loc == 0) M3.surfaceContainerLow else M3.primaryContainer)
     }
 
     fun apply(widget: AIOCellGroupWidget) {
@@ -58,7 +59,14 @@ object BubbleCorner {
         // 气泡颜色 settings preview shows (other→surfaceContainer, self→primary) so chat matches it.
         val color = resolvedBubbleColor(loc)
         val r = Settings.bubbleCornerRadius.value.dpf
-        wrapper.background = roundCornerDrawable(color, r)
+        // MD3 聊天气泡：远离发送方的一侧用大圆角，发送侧用小圆角。
+        // other/guest（对方，气泡在左）：大圆角在右；self/host（自己，气泡在右）：大圆角在左。
+        val small = (r * 0.4f).coerceAtLeast(0f)
+        wrapper.background = if (loc == 0) {
+            roundCornerDrawable(color, small, r, r, small)
+        } else {
+            roundCornerDrawable(color, r, small, small, r)
+        }
         // Keep the original text inset and add ~half the radius horizontally so glyphs near
         // the corners aren't clipped by the rounded edge.
         val extra = (r * 0.5f).toInt()
@@ -78,7 +86,13 @@ object BubbleCorner {
         val r = Settings.bubbleCornerRadius.value.dpf
         val pl = wrapper.paddingLeft; val pt = wrapper.paddingTop
         val pr = wrapper.paddingRight; val pb = wrapper.paddingBottom
-        wrapper.background = roundCornerDrawable(resolvedBubbleColor(loc), r)
+        val color = resolvedBubbleColor(loc)
+        val small = (r * 0.4f).coerceAtLeast(0f)
+        wrapper.background = if (loc == 0) {
+            roundCornerDrawable(color, small, r, r, small)
+        } else {
+            roundCornerDrawable(color, r, small, small, r)
+        }
         wrapper.setPadding(pl, pt, pr, pb)
     }
 

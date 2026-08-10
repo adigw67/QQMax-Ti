@@ -149,6 +149,8 @@ object M3 {
     // ── Surfaces (light defaults = MD3 baseline neutral surfaces / surface-container tones) ───────
     val surface: Int get() = tok(momoi.mod.qqpro.Settings.themeSurface.value, SysRole.SURFACE, dl(0xFF_1A1A1A.toInt(), 0xFF_FFFBFE.toInt()))              // screen background
     val surfaceContainer: Int get() = tok(momoi.mod.qqpro.Settings.themeSurfaceContainer.value, SysRole.SURFACE_CONTAINER, dl(0xFF_222222.toInt(), 0xFF_F3EDF7.toInt()))     // field / sunken surface / card
+    // MD3 对话气泡（对方）：介于 surface 与 surfaceContainer 之间的低一级容器色。
+    val surfaceContainerLow: Int get() = tok(momoi.mod.qqpro.Settings.themeSurfaceContainer.value, SysRole.SURFACE_CONTAINER, dl(0xFF_1E1E1E.toInt(), 0xFF_F7F2FA.toInt()))
     val surfaceContainerHigh: Int get() = tok(momoi.mod.qqpro.Settings.themeSurfaceContainerHigh.value, SysRole.SURFACE_CONTAINER_HIGH, dl(0xFF_2A2A2A.toInt(), 0xFF_ECE6F0.toInt())) // raised card / row pressed
     val surfaceVariant: Int get() = tok(momoi.mod.qqpro.Settings.themeSurfaceVariant.value, SysRole.SURFACE_VARIANT, dl(0xFF_2E2E2E.toInt(), 0xFF_E7E0EC.toInt()))
 

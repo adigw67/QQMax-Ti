@@ -408,7 +408,7 @@ class 设置页 : SettingsActivity() {
             slider("聊天文本缩放", "聊天气泡内文字大小", Settings.chatScale)
             slider("图片最大高度", "聊天图片最大显示高度(占屏幕高度比例)，默认 0.5", Settings.picMaxHeightRatio, min = 0.3f, max = 1f)
             switch("长截图支持", "查看大图时，若图片高度≥屏幕2倍(长截图)，默认按屏幕宽度铺满并定位到顶部，可上下滚动阅读；双击循环缩放：1档整图高度·2档铺满宽度·3档进一步放大", Settings.longScreenshot)
-            slider("气泡圆角半径", "聊天气泡、合并转发/聊天记录块与回复块的圆角半径(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
+            slider("气泡圆角半径", "聊天气泡远离发送方的一侧用此大圆角、发送侧用其 40% 小圆角（MD3 造型）；合并转发/聊天记录块与回复块仍为统一圆角(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
             colorPicker("我的气泡颜色", "留空为材料色", Settings.bubbleColorSelf, MaterialColors.ACCENT,
                 { M3.parseColorOrNull(Settings.bubbleColorSelf.value) ?: M3.primary })
             colorPicker("对方气泡颜色", "留空为材料色", Settings.bubbleColorOther, MaterialColors.SURFACE + MaterialColors.ACCENT,

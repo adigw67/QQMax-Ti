@@ -1,7 +1,6 @@
 package momoi.mod.qqpro.lib.material
 
 import android.content.Context
-import android.graphics.Typeface
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.View
@@ -23,8 +22,6 @@ class M3ListItem(ctx: Context) : LinearLayout(ctx) {
     private val textCol = LinearLayout(ctx).apply { orientation = VERTICAL }
     private val titleView = TextView(ctx).apply {
         setTextColor(M3.onSurface); textSize = 16f
-        // MD3 label-large：sans-serif-medium（500），不是粗体也不是常规体。
-        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         isSingleLine = true; ellipsize = TextUtils.TruncateAt.END
     }
     private val subtitleView = TextView(ctx).apply {
