@@ -7,6 +7,7 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextPaint
 import android.text.style.MetricAffectingSpan
+import android.util.Base64
 import android.util.SparseArray
 import android.view.View
 import android.view.ViewGroup
@@ -20,8 +21,6 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.zip.Inflater
 import kotlin.concurrent.thread
 
@@ -61,7 +60,10 @@ object FontPack {
     private var miTypeface: Typeface? = null
     private var boldTypeface: Typeface? = null
     private var uniTypeface: Typeface? = null
-    private var miCoverage: CmapCoverage? = null
+    // MiSans 的 BMP 覆盖位图：构建时从官方 MiSans-Regular.ttf 的 cmap 精确生成（8192 字节，
+    // Base64 内嵌）。运行时 O(1) 查表，不读字体文件、没有解析失败模式。
+    private const val MI_BMP_B64 = "AiQAAP///////////////wAAAAD/////////////////////////////////////AoUEAyOgmQAP4P8f8MMB/gAAAM8AAIAAAAD////9f28f/zf7/z+NGcIfA3/vMwgA/58E9/kXFT7AfwAQBgAwQPDX///7/////39eAAAAAAD///////////////8MDDwAAACPPAzAzw8ABAADDMMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAiKPFCQDwfwAAAAAQAQAACPADAAAAAAAAAwAAAAAAAMAAAAAAAAAAAD8AAED//////////////wMAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAGeXdnA//enEMiAN8D84//YwAAGFsCpwAAAAAAAAAAKALYQEdAAAAAABh4////AwcAzwMAAAAAEAAAAAAAAABEgSbkqU/wMAARBADzwAAAAAAgAiAAAIAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wPw/////w8AAAAAAAAAAAAAAAD///////////8P/////w8A/v84AAMADDDAzAAAPAAAAGACAAAAAAAABQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAB4AAAAAP//DwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEhmAAIBEyAgABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP8P7///YP4DAED+////////////H37+/////////////3fg/////wMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/AwIAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAHACAAAAEEAmAAAAAAD///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////8/AAAAAAAAAAAA////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAgAAIAAAAAAAAAAAAIAAAgAA8BqBmwMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/wMAAPv/H/73/n8PAAAAAAAAAAAAAAAAAAAAAAAA/v////////////9/AAAAAAAAAAAAAAAAAAAAAD8AAAA="
+    private val miBmp: ByteArray by lazy { Base64.decode(MI_BMP_B64, Base64.DEFAULT) }
     // 替换前的原始系统字体对象：某些 ROM 上反射换 DEFAULT 不生效（系统字体走私有路径），
     // 需要 [applyAll] 遍历视图树，把仍在使用这些原始字体的 TextView 强制换成 MiSans。
     private var originalDefault: Typeface? = null
@@ -100,7 +102,8 @@ object FontPack {
             miTypeface = mi
             boldTypeface = bold
             uniTypeface = Typeface.createFromFile(unifontFile())
-            miCoverage = CmapCoverage(regularFile()!!)
+            // 自检覆盖表（构建期生成，理应正确；异常时便于从日志定位）
+            Utils.log("FontPack: miCovers 中=${miCovers(0x4E2D)} ᗜ=${miCovers(0x15DC)}")
 
             runCatching {
                 val f = Typeface::class.java.getDeclaredField("sSystemFontMap")
@@ -169,15 +172,24 @@ object FontPack {
 
     /** MiSans 是否覆盖 [text] 的全部码位。 */
     fun coversAll(text: CharSequence): Boolean {
-        val cover = miCoverage ?: return false
         if (text.isEmpty()) return true
         var i = 0
         while (i < text.length) {
             val cp = Character.codePointAt(text, i)
-            if (!cover.has(cp)) return false
+            if (!miCovers(cp)) return false
             i += Character.charCount(cp)
         }
         return true
+    }
+
+    /** O(1) 码位覆盖查询：BMP 用位图；BMP 之外（扩展区）交给 Unifont 兜底。 */
+    private fun miCovers(cp: Int): Boolean {
+        if (cp < 0) return false
+        if (cp <= 0xFFFF) {
+            val b = miBmp[cp ushr 3]
+            return (b.toInt() ushr (cp and 7)) and 1 == 1
+        }
+        return false
     }
 
     private fun setStatic(cls: Class<*>, name: String, value: Any) {
@@ -196,14 +208,21 @@ object FontPack {
         if (text is Spanned && text.getSpans(0, text.length, FontSpan::class.java).isNotEmpty()) return text
         val mi = miTypeface ?: return text
         val uni = uniTypeface ?: return text
-        val cover = miCoverage ?: return text
+        // 快速扫描：全部被 MiSans 覆盖则原样返回（常见情况零分配）。
+        var i = 0
+        var need = false
+        while (i < text.length) {
+            if (!miCovers(Character.codePointAt(text, i))) { need = true; break }
+            i += Character.charCount(Character.codePointAt(text, i))
+        }
+        if (!need) return text
         val sb = SpannableStringBuilder(text)
         var start = 0
         var cur = 0
         var inMi = true
         while (cur < text.length) {
             val cp = Character.codePointAt(text, cur)
-            val covered = cover.has(cp)
+            val covered = miCovers(cp)
             if (cur == 0) inMi = covered
             if (covered != inMi) {
                 if (cur > start) {
@@ -284,7 +303,6 @@ object FontPack {
         miTypeface = null
         boldTypeface = null
         uniTypeface = null
-        miCoverage = null
     }
 
     private fun report(onStatus: (String) -> Unit, s: String) {
@@ -494,86 +512,6 @@ object FontPack {
     private fun u32(b: ByteArray, off: Int): Long =
         (b[off].toLong() and 0xFF) or ((b[off + 1].toLong() and 0xFF) shl 8) or
             ((b[off + 2].toLong() and 0xFF) shl 16) or ((b[off + 3].toLong() and 0xFF) shl 24)
-
-    // ===== cmap 覆盖解析（判断 MiSans 是否覆盖某码位） =====
-
-    private class CmapCoverage(file: File) {
-        private val format4 = ArrayList<IntArray>()
-        private val format12 = ArrayList<LongArray>()
-
-        init { parse(file) }
-
-        private fun parse(file: File) {
-            val data = file.readBytes()
-            val buf = ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN)
-            val numTables = buf.getShort(4).toInt() and 0xFFFF
-            var cmapOff = -1
-            var cmapLen = 0
-            for (i in 0 until numTables) {
-                val base = 12 + i * 16
-                val tag = String(data, base, 4, Charsets.US_ASCII)
-                if (tag == "cmap") {
-                    cmapOff = buf.getInt(base + 8)
-                    cmapLen = buf.getInt(base + 12)
-                    break
-                }
-            }
-            if (cmapOff < 0 || cmapLen <= 0) return
-            val cmap = ByteBuffer.wrap(data, cmapOff, cmapLen).order(ByteOrder.BIG_ENDIAN)
-            val numSub = cmap.getShort(2).toInt() and 0xFFFF
-            // 优先 format 12（(3,10)/(0,6)），其次 format 4（(3,1)/(0,3)）
-            var f12 = -1
-            var f4 = -1
-            for (i in 0 until numSub) {
-                val base = 4 + i * 8
-                val platform = cmap.getShort(base).toInt() and 0xFFFF
-                val encoding = cmap.getShort(base + 2).toInt() and 0xFFFF
-                val off = cmap.getInt(base + 4)
-                if (f12 < 0 && ((platform == 3 && encoding == 10) || (platform == 0 && encoding == 6))) f12 = off
-                if (f4 < 0 && ((platform == 3 && encoding == 1) || (platform == 0 && encoding == 3))) f4 = off
-            }
-            val off = if (f12 >= 0) f12 else f4
-            if (off < 0) return
-            val sub = ByteBuffer.wrap(data, cmapOff + off, cmapLen - off).order(ByteOrder.BIG_ENDIAN)
-            val fmt = sub.getShort(0).toInt() and 0xFFFF
-            when (fmt) {
-                12 -> {
-                    val groups = sub.getInt(12)
-                    for (i in 0 until groups) {
-                        val g = 16 + i * 12
-                        val start = sub.getInt(g).toLong() and 0xFFFFFFFFL
-                        val end = sub.getInt(g + 4).toLong() and 0xFFFFFFFFL
-                        format12.add(longArrayOf(start, end))
-                    }
-                }
-                4 -> {
-                    val segX2 = sub.getShort(6).toInt() and 0xFFFF
-                    val seg = segX2 / 2
-                    val endBase = 14
-                    val startBase = endBase + segX2 + 2
-                    val deltaBase = startBase + segX2
-                    for (i in 0 until seg) {
-                        val start = sub.getShort(startBase + i * 2).toInt() and 0xFFFF
-                        val end = sub.getShort(endBase + i * 2).toInt() and 0xFFFF
-                        val delta = sub.getShort(deltaBase + i * 2).toInt()
-                        if (end == 0xFFFF && start == 0xFFFF) continue
-                        if (start <= end) format4.add(intArrayOf(start, end, delta))
-                    }
-                }
-            }
-        }
-
-        fun has(cp: Int): Boolean {
-            if (cp < 0) return true
-            if (cp <= 0xFFFF) {
-                for (s in format4) if (cp >= s[0] && cp <= s[1]) return true
-            }
-            for (s in format12) {
-                if (cp >= s[0] && cp <= s[1]) return true
-            }
-            return false
-        }
-    }
 
     private class FontSpan(private val tf: Typeface) : MetricAffectingSpan() {
         override fun updateDrawState(p: TextPaint) { p.typeface = tf }

@@ -11,9 +11,11 @@ QQProMax 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研
 - 补齐了大量手表端缺失或难用的功能（完整输入、表情、语音、大表情、群管理、说说等）；
 - 所有 hook 逻辑均在本项目的 `app/src/main/java/momoi/` 与 `app/src/main/java/com/tencent/` 中实现，构建时再注入原版。
 
-当前版本：**M2.5-4.4（v17 / API19fix）**，包名 `com.tencent.qqlite`，构建日期 2026-08-10。
+当前版本：**M2.5-4.4（v18 / API19fix）**，包名 `com.tencent.qqlite`，构建日期 2026-08-10。
 
 **v17 新增**：设置 → 外观主题 →「联网字体包」——从官方源下载 MiSans（优先显示）+ GNU Unifont（生僻字兜底），仅本应用进程内生效，防生僻字/扩展区字形缺失。
+
+**v18 修复**：字体覆盖判定改为构建期从官方 MiSans cmap 生成的精确 BMP 位图（8KB 内嵌、O(1) 查表），去掉运行时解析 8MB 字体文件——修复部分手表上「常见中文也被判为缺字、整屏退回 Unifont 点阵」的问题。
 
 ## 本目录内容
 
@@ -21,7 +23,7 @@ QQProMax 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研
 QQProMax-M2.5-4.4-发布包/
 ├── README.md                  ← 本文件（自述文档）
 ├── 安装包/
-│   └── QQMax-Ti_M2.5-4.4-API19fix-v17.apk   ← 当前可安装包（5-dex，腾讯原签名保留）
+│   └── QQMax-Ti_M2.5-4.4-API19fix-v18.apk   ← 当前可安装包（5-dex，腾讯原签名保留）
 ├── 文档/
 │   ├── ApkMixin.md            ← ApkMixin 注入机制原始文档
 │   ├── HOOKS.md               ← hook 方法技术文档（@Mixin 机制 + 关键 hook 清单）
@@ -41,7 +43,7 @@ QQProMax-M2.5-4.4-发布包/
 
 ## 安装
 
-1. 把 `安装包/QQMax-Ti_M2.5-4.4-API19fix-v17.apk` 传到手表（`adb install -r` 或直接拷贝到手表存储点击安装）；
+1. 把 `安装包/QQMax-Ti_M2.5-4.4-API19fix-v18.apk` 传到手表（`adb install -r` 或直接拷贝到手表存储点击安装）；
 2. 首次启动会做 5 个 dex 的提取与优化（老手表约 2~5 分钟，属正常）；
 3. 进入「QQ Max」欢迎页 → 扫码登录。
 
