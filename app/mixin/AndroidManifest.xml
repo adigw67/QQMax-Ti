@@ -44,6 +44,10 @@
       no window ever drawn). Harmless for a user-side mod build.
     -->
     <application android:debuggable="true" android:label="QQMax-Ti">
+        <!-- 聊天背景裁剪页（实验性）：选图后强制裁到屏幕比例，可拖动/缩放调整位置。 -->
+        <activity
+            android:name="momoi.mod.qqpro.hook.CropBackgroundActivity"
+            android:exported="false" />
         <activity android:name="com.tencent.qqnt.watch.app.JumpActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

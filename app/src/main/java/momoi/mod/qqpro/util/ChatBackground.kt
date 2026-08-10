@@ -1,8 +1,13 @@
 package momoi.mod.qqpro.util
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.ColorFilter
+import android.graphics.Path
+import android.graphics.PixelFormat
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -11,80 +16,118 @@ import android.net.Uri
 import android.widget.ImageView
 import momoi.mod.qqpro.Settings
 import java.io.File
+import java.io.FileOutputStream
 
 /**
- * Custom chat background image picked by the user in settings. The picked image is
- * copied into the app's private files dir (so we don't depend on a content-uri
- * permission surviving), then loaded — downsampled to the screen — as a
- * [BitmapDrawable] with a black overlay whose alpha is driven by
- * [Settings.chatBgDarken] for readability.
+ * 聊天页背景（实验性）：每个会话可单独设置背景图，另有一个全局背景兜底。
+ *
+ *  - 每群背景：files/chat_bg/bg_<peerHash>.img
+ *  - 全局背景：files/chat_bg.img（旧的单背景文件，保持兼容）
+ *  - 加载时按屏幕降采样，返回带「变暗遮罩」（[Settings.chatBgDarken]）的 Drawable，
+ *    由调用方以 CENTER_CROP 铺满聊天内容区。
+ *  - 图片在设置页经过强制裁剪（屏幕比例、可拖动调整位置）后以 [saveCropped] 保存。
+ *  - [monetColor]：从图片提取主色，供「自动莫奈取色」设置 UI 主题色（实验性）。
  */
 object ChatBackground {
-    private val file: File
-        get() = File(Utils.application.filesDir, "chat_bg.img")
+    private fun dir(): File = File(Utils.application.filesDir, "chat_bg").apply { mkdirs() }
+    private val globalFile: File get() = File(Utils.application.filesDir, "chat_bg.img")
+    private fun peerFile(peerUid: String?): File =
+        File(dir(), "bg_${(peerUid ?: "global").hashCode().toString(16)}.img")
 
-    fun isSet(): Boolean = file.exists()
+    fun enabled(): Boolean = Settings.chatBgEnabled.value
 
-    /** Copy the image behind [uri] into our private storage. Returns true on success. */
-    fun save(context: Context, uri: Uri): Boolean {
-        return try {
-            context.contentResolver.openInputStream(uri).use { input ->
-                if (input == null) return false
-                file.outputStream().use { output -> input.copyTo(output) }
-            }
-            Utils.log("ChatBackground saved from $uri -> ${file.absolutePath} (${file.length()} bytes)")
-            true
-        } catch (e: Exception) {
-            Utils.log("ChatBackground save failed: ${e.javaClass.simpleName}: ${e.message}")
-            false
-        }
+    /** 该会话是否有背景可显示：会话独立背景优先，否则全局背景。peerUid 为 null = 只看全局。 */
+    fun isSet(peerUid: String?): Boolean =
+        peerFile(peerUid).exists() || (peerUid != null && globalFile.exists())
+
+    fun peerSet(peerUid: String?): Boolean = peerFile(peerUid).exists()
+    fun globalSet(): Boolean = globalFile.exists()
+
+    /** 保存裁剪好的位图（JPEG）。[peerUid] 为 null/空 = 全局背景。 */
+    fun saveCropped(bitmap: Bitmap, peerUid: String?): Boolean = try {
+        val out = peerFile(peerUid?.takeIf { it.isNotBlank() })
+        FileOutputStream(out).use { fos -> bitmap.compress(Bitmap.CompressFormat.JPEG, 88, fos) }
+        Utils.log("ChatBackground saved peer=${peerUid ?: "global"} -> ${out.absolutePath} (${out.length()} bytes)")
+        true
+    } catch (e: Exception) {
+        Utils.log("ChatBackground save failed: ${e.javaClass.simpleName}: ${e.message}")
+        false
     }
 
-    fun clear() {
-        if (file.exists()) file.delete()
-        Utils.log("ChatBackground cleared")
+    fun clear(peerUid: String?) {
+        val f = peerFile(peerUid?.takeIf { it.isNotBlank() })
+        if (f.exists()) f.delete()
     }
 
-    /** The picked image with the configured darken overlay, or null if none is set. */
-    fun loadDrawable(): Drawable? {
-        if (!isSet()) return null
+    fun clearAll() {
+        dir().listFiles()?.forEach { it.delete() }
+        if (globalFile.exists()) globalFile.delete()
+    }
+
+    /** 该会话要显示的背景文件（独立优先，其次全局），无则 null。 */
+    private fun pickFile(peerUid: String?): File? {
+        val peer = peerFile(peerUid?.takeIf { it.isNotBlank() })
+        if (peer.exists()) return peer
+        return if (peerUid != null && globalFile.exists()) globalFile else null
+    }
+
+    /** 解码 + 变暗遮罩；无背景返回 null。 */
+    fun loadDrawable(peerUid: String?): Drawable? {
+        if (!enabled()) return null
+        val f = pickFile(peerUid) ?: return null
         return try {
             val metrics = Utils.application.resources.displayMetrics
             val reqW = metrics.widthPixels
             val reqH = metrics.heightPixels
 
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeFile(file.absolutePath, bounds)
+            BitmapFactory.decodeFile(f.absolutePath, bounds)
             if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
 
             val opts = BitmapFactory.Options().apply {
                 inSampleSize = sampleSize(bounds.outWidth, bounds.outHeight, reqW, reqH)
             }
-            val bitmap = BitmapFactory.decodeFile(file.absolutePath, opts) ?: return null
+            val bitmap = BitmapFactory.decodeFile(f.absolutePath, opts) ?: return null
             val image = BitmapDrawable(Utils.application.resources, bitmap)
+            // 背景图自身半透明（MD3e 风格）：数值越小越透，露出下方 surface。
+            image.alpha = (Settings.chatBgAlpha.value.coerceIn(0.3f, 1f) * 255).toInt()
 
             val darken = Settings.chatBgDarken.value.coerceIn(0f, 0.95f)
-            if (darken <= 0f) {
-                image
-            } else {
+            val base: Drawable = if (darken <= 0f) image
+            else {
                 val overlay = ColorDrawable(Color.argb((darken * 255).toInt(), 0, 0, 0))
                 LayerDrawable(arrayOf<Drawable>(image, overlay))
             }
+            // MD3e 圆表适配：按圆屏内切圆裁剪，四角露出 M3 surface，不被方图盖住。
+            if (Settings.md3eRound.value) CircleClipDrawable(base) else base
         } catch (e: Exception) {
             Utils.log("ChatBackground load failed: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
     }
 
-    /**
-     * Apply the custom background to a [WatchFragment] background ImageView, or do
-     * nothing if no image is set (leaving the app's default background intact).
-     */
-    fun applyTo(bgView: ImageView?) {
+    /** 应用到聊天页背景 ImageView（CENTER_CROP 铺满）。 */
+    fun applyTo(bgView: ImageView?, peerUid: String?) {
         if (bgView == null) return
-        val drawable = loadDrawable() ?: return
+        val drawable = loadDrawable(peerUid) ?: return
         bgView.scaleType = ImageView.ScaleType.CENTER_CROP
         bgView.setImageDrawable(drawable)
+    }
+
+    /** 从位图提取主色（简单莫奈式）：缩到 32x32 后取平均色。 */
+    fun monetColor(bitmap: Bitmap): Int {
+        val bmp = Bitmap.createScaledBitmap(bitmap, 32, 32, true)
+        val px = IntArray(32 * 32)
+        bmp.getPixels(px, 0, 32, 0, 0, 32, 32)
+        if (bmp !== bitmap) bmp.recycle()
+        var r = 0L; var g = 0L; var b = 0L
+        for (c in px) {
+            r += c shr 16 and 0xFF
+            g += c shr 8 and 0xFF
+            b += c and 0xFF
+        }
+        val n = px.size
+        return Color.rgb((r / n).toInt(), (g / n).toInt(), (b / n).toInt())
     }
 
     private fun sampleSize(w: Int, h: Int, reqW: Int, reqH: Int): Int {
@@ -92,9 +135,25 @@ object ChatBackground {
         if (reqW <= 0 || reqH <= 0) return sample
         var halfW = w / 2
         var halfH = h / 2
-        while (halfW / sample >= reqW && halfH / sample >= reqH) {
-            sample *= 2
-        }
+        while (halfW / sample >= reqW && halfH / sample >= reqH) sample *= 2
         return sample
     }
+}
+
+/** 把内层 drawable 裁剪到所在 bounds 的内切圆（圆表安全区）。 */
+private class CircleClipDrawable(private val inner: Drawable) : Drawable() {
+    private val clip = Path()
+    override fun draw(canvas: Canvas) {
+        val r = minOf(bounds.width(), bounds.height()) / 2f
+        clip.reset()
+        clip.addCircle(bounds.exactCenterX(), bounds.exactCenterY(), r, Path.Direction.CW)
+        canvas.save()
+        canvas.clipPath(clip)
+        inner.bounds = bounds
+        inner.draw(canvas)
+        canvas.restore()
+    }
+    override fun setAlpha(alpha: Int) { inner.alpha = alpha }
+    override fun setColorFilter(colorFilter: ColorFilter?) { inner.colorFilter = colorFilter }
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }

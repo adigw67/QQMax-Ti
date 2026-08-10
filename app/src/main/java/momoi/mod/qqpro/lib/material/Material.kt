@@ -186,6 +186,7 @@ object M3 {
     val radiusSm get() = 8.dp.toFloat()
     val radiusMd get() = 12.dp.toFloat()
     val radiusLg get() = 16.dp.toFloat()
+    val radiusXl get() = 28.dp.toFloat()
     val radiusPill = 9999f
 
     // ── Deprecated aliases (kept so existing call sites keep compiling) ──────────

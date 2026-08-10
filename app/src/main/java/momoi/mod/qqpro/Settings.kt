@@ -272,6 +272,14 @@ object Settings {
     // Rounded-corner radius (in dp) for chat bubbles, the merged-forward/chat-history
     // blocks and the reply block. 0 = square.
     val bubbleCornerRadius = FloatPref("bubbleCornerRadius", 10f)
+    // 聊天背景（实验性）：每群独立背景图 + 全局背景。总开关，关闭后聊天页用默认背景。
+    val chatBgEnabled = BooleanPref("chatBgEnabled", false)
+    // 自动莫奈取色（实验性）：设置背景后从图片提取主色作为 UI 主题色。
+    val chatBgMonet = BooleanPref("chatBgMonet", false)
+    // 背景图自身半透明程度（0.3~1.0）：数值越小越透，露出下方 M3 surface。
+    val chatBgAlpha = FloatPref("chatBgAlpha", 0.85f)
+    // MD3e 圆表适配（实验性）：背景图按圆屏内切圆裁剪，避免方图盖到圆表四角。
+    val md3eRound = BooleanPref("md3eRound", false)
     // Override chat-bubble fill color, as a hex string (#RRGGBB or #AARRGGBB / with or
     // without the leading #). Blank keeps the original bubble color (sampled per side).
     val bubbleColorSelf = StringPref("bubbleColorSelf", "")

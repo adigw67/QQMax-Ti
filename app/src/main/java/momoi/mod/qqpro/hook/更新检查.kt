@@ -8,6 +8,7 @@ import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.StyleChooserActivity
 import momoi.mod.qqpro.applyOrientationSetting
+import momoi.mod.qqpro.lib.RoundWatch
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.watchdog.Watchdog
 
@@ -30,6 +31,9 @@ class 更新检查 : MainActivity() {
         // 横屏模式：开启固定横屏、关闭固定竖屏（不跟随传感器自动旋转）。放在 UI 构建前应用。
         runCatching { applyOrientationSetting() }
             .onFailure { Utils.log("横屏模式: onCreate 应用方向失败: $it") }
+        // MD3e 圆表 UI（可选）：主界面盖圆表遮罩（内切圆安全区）。
+        runCatching { RoundWatch.apply(window.decorView) }
+            .onFailure { Utils.log("RoundWatch: 主界面遮罩失败: $it") }
         Watchdog.install(this)
         // 可选联网字体包：已下载且启用时，把进程内默认字体替换为 MiSans（Unifont 兜底）。
         // 在 UI 构建前应用，之后创建的 TextView 全部生效。

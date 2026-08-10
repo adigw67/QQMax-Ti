@@ -214,7 +214,16 @@ object MainNav {
                 clipToPadding = false
                 // The bar otherwise sits over the window's pure black; fill it with the M3 page
                 // surface so it matches the materialized pages (chat list etc.) seamlessly.
-                setBackgroundColor(M3.surface)
+                // MD3e 圆表 UI（可选）：底部导航栏用顶部大圆角的「浮起胶囊」表达风格。
+                background = if (Settings.md3eRound.value) {
+                    GradientDrawable().apply {
+                        shape = GradientDrawable.RECTANGLE
+                        setColor(M3.surfaceContainerHigh)
+                        cornerRadii = floatArrayOf(24.dp.toFloat(), 24.dp.toFloat(), 24.dp.toFloat(), 24.dp.toFloat(), 0f, 0f, 0f, 0f)
+                    }
+                } else {
+                    android.graphics.drawable.ColorDrawable(M3.surface)
+                }
                 // Stay hidden until positionBar has placed us (bottom/top); otherwise the bar paints
                 // one frame at its default y=0 (top) before the deferred post moves it down — a visible
                 // flash at the top on every return to the home page in bottom mode.

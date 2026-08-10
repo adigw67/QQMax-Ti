@@ -15,6 +15,7 @@ import momoi.mod.qqpro.findAll
 import momoi.mod.qqpro.lib.dp
 import momoi.mod.qqpro.lib.material.M3
 import momoi.mod.qqpro.hook.action.GalleryMultiSelectState
+import momoi.mod.qqpro.hook.action.CurrentContact
 import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
 
@@ -30,9 +31,11 @@ class WatchAIOPageReset : WatchAIOFragment() {
     // picked a custom chat background, swap that image in (darkened for readability).
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        if (ChatBackground.isSet()) {
-            Utils.log("WatchAIOFragment.onViewCreated applying custom chat background, bgView=${this.d}")
-            ChatBackground.applyTo(this.d)
+        // 每群独立背景：按当前会话 peerUid 取图（无独立图则回退全局背景），总开关开启才生效。
+        val peer = runCatching { CurrentContact.peerUid }.getOrNull()
+        if (ChatBackground.enabled() && ChatBackground.isSet(peer)) {
+            Utils.log("WatchAIOFragment.onViewCreated applying custom chat background peer=$peer, bgView=${this.d}")
+            ChatBackground.applyTo(this.d, peer)
         } else if (Settings.materializeChat.value) {
             // No custom chat background image → overwrite the native (dark) default bg ImageView with
             // the themed M3 surface, so the chat content area isn't a black background in light mode.

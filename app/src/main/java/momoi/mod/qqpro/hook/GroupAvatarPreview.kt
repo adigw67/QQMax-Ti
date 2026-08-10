@@ -1,5 +1,7 @@
 package momoi.mod.qqpro.hook
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import com.tencent.qqnt.watch.gallery.preview.RFWLayerLaunchUtilKt
@@ -29,6 +31,8 @@ class GroupAvatarPreview : SettingFrame() {
         addSummaryHistoryEntry(this)
         // 单聊设置页底部加入"TA的空间"入口,跳转该好友的QQ空间。
         addQzoneEntry(this)
+        // 右滑聊天设置页加入「聊天背景」入口（每群独立背景，选图进裁剪页）。
+        addChatBgEntry(this)
         // 单聊设置页在原生性别/生日下方补充 年龄·星座·生肖 / 地区 / 签名(随增强资料卡开关)。
         if (Settings.useRichProfile.value) addDmExtraInfo(this)
         // 群聊设置页加入"群公告"入口,查看该群的当前公告。
@@ -42,6 +46,23 @@ class GroupAvatarPreview : SettingFrame() {
         }
         // 长按头像(群头像或单聊对方头像)保存大图到相册。群聊用群号、单聊用对方 uin 取大图。
         AvatarSave.attach(this.f) { AvatarSave.contactUrl(chatType, peerId) }
+    }
+
+    /** 聊天背景选图结果 → 进入裁剪页（强制裁到屏幕比例，可拖动调整位置）。 */
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_CHAT_BG_PICK && resultCode == Activity.RESULT_OK) {
+            val uri = data?.data ?: return
+            val peer = arguments?.getString("key_bundle_peer_id") ?: return
+            runCatching {
+                val ctx = requireContext()
+                ctx.startActivity(Intent(ctx, CropBackgroundActivity::class.java).apply {
+                    putExtra(CropBackgroundActivity.EXTRA_URI, uri)
+                    putExtra(CropBackgroundActivity.EXTRA_PEER, peer)
+                    putExtra(CropBackgroundActivity.EXTRA_MONET, true)
+                })
+            }.onFailure { Utils.log("ChatBgEntry: 打开裁剪页失败: $it") }
+        }
     }
 }
 

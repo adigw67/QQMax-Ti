@@ -29,6 +29,8 @@ import com.tencent.widget.Switch
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Pref
 import momoi.mod.qqpro.applyOrientationSetting
+import momoi.mod.qqpro.hook.action.CurrentContact
+import momoi.mod.qqpro.lib.RoundWatch
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.aio_cell.BubbleCorner
 import momoi.mod.qqpro.hook.aio_cell.GroupAvatarHook
@@ -77,11 +79,13 @@ import kotlin.math.roundToInt
 private val ACCENT get() = M3.primary
 private val TRACK_INACTIVE = M3.outline
 private const val REQ_PICK_CHAT_BG = 0x9B01
+private const val REQ_CROP_CHAT_BG = 0x9B02
 private const val REQ_IMPORT_SETTINGS = 0x9B02
 
 // Kept at file scope (not a @Mixin field — those can't have initializers) so
 // onActivityResult can refresh the picker's status text after picking/clearing.
 private var bgStatusLabel: TextView? = null
+private var pendingBgPeer: String? = null
 private var fontStatusLabel: TextView? = null
 
 // Two-level navigation state, also at file scope to avoid @Mixin field initializers.
@@ -115,6 +119,9 @@ class 设置页 : SettingsActivity() {
         // 横屏模式：本设置页也跟随开关立即切换方向（onCreate 重建时再确认一次）。
         runCatching { applyOrientationSetting() }
             .onFailure { Utils.log("设置页: 横屏模式应用失败: $it") }
+        // MD3e 圆表 UI（可选）：设置页盖圆表遮罩。
+        runCatching { RoundWatch.apply(window.decorView) }
+            .onFailure { Utils.log("设置页: 圆表遮罩失败: $it") }
 
         // Make this activity translucent + drop the system open/close transition: the SwipeBackLayout's
         // own fade+slide is our transition, and translucency lets a swipe-back reveal the screen
@@ -133,6 +140,11 @@ class 设置页 : SettingsActivity() {
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             setBackgroundColor(M3.surface)
+            // 圆屏安全区（可选）：顶/底留出圆边裁切区，内容不被圆角裁到。
+            if (Settings.md3eRound.value) {
+                val inset = RoundWatch.safeTopBottomPx(this@设置页)
+                setPadding(0, inset, 0, inset)
+            }
         }
         val root = LinearLayout(this)
             .vertical()
@@ -458,7 +470,11 @@ class 设置页 : SettingsActivity() {
                 { M3.parseColorOrNull(Settings.textColorSelf.value) ?: M3.onColor(BubbleCorner.resolvedBubbleColor(1)) })
             colorPicker("对方文字颜色", "留空为自动对比对方气泡色", Settings.textColor, MaterialColors.ON,
                 { M3.parseColorOrNull(Settings.textColor.value) ?: M3.onColor(BubbleCorner.resolvedBubbleColor(0)) })
+            switch("聊天背景（实验性·MD3e）", "启用聊天页背景图：每个会话可单独设置，另有全局背景兜底；设置时强制裁剪到屏幕比例、可拖动调整位置；背景图半透明叠加", Settings.chatBgEnabled)
+            switch("自动莫奈取色（实验性）", "设置背景后自动从图片提取主色作为 UI 主题色（会清除自定义配色）", Settings.chatBgMonet)
+            switch("MD3e 圆表适配（实验性）", "背景图按圆屏内切圆裁剪，四角露出 M3 surface（圆表安全区）；重进聊天页生效", Settings.md3eRound)
             chatBackgroundPicker()
+            slider("背景图片透明度", "背景图自身半透明程度（越小越透，露出下方 M3 surface），配合变暗遮罩保证文字可读；重进聊天页生效", Settings.chatBgAlpha, min = 0.3f, max = 1f)
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
         },
         SettingsCategory("群聊头像", "群聊中的头像与昵称") {
@@ -991,13 +1007,18 @@ class 设置页 : SettingsActivity() {
     }
 
     private fun updateBgStatus() {
-        bgStatusLabel?.text = if (ChatBackground.isSet()) "已设置背景图片" else "未设置（使用默认背景）"
+        bgStatusLabel?.text = buildString {
+            append("总开关：${if (ChatBackground.enabled()) "开" else "关"} · ")
+            append("全局：${if (ChatBackground.globalSet()) "已设置" else "未设置"} · ")
+            val peer = CurrentContact.peerUid
+            append("当前会话：${if (peer.isNotBlank() && ChatBackground.peerSet(peer)) "已设置" else "未设置"}")
+        }
     }
 
     private fun GroupScopeFix.chatBackgroundPicker() = card { card ->
         card.vertical()
         card.content {
-            titleColumn("聊天背景图片", "选择一张图片作为聊天页背景").width(FILL)
+            titleColumn("聊天背景图片（实验性）", "每群独立背景 + 全局兜底；选图后强制裁剪到屏幕比例，可拖动/缩放调整位置").width(FILL)
             bgStatusLabel = add<TextView>()
                 .textSize(11f)
                 .textColor(M3.onSurfaceVariant)
@@ -1007,13 +1028,40 @@ class 设置页 : SettingsActivity() {
                 .width(FILL)
                 .padding(top = 8.dp)
                 .content {
-                    pillButton("选择图片", ACCENT) { pickChatBackground() }
+                    pillButton("当前群背景", ACCENT) {
+                        if (CurrentContact.peerUid.isBlank()) {
+                            Utils.toast(this@设置页, "请先进入一个聊天再设置")
+                        } else {
+                            pendingBgPeer = CurrentContact.peerUid
+                            pickChatBackground()
+                        }
+                    }
                         .weight(1f)
                         .margin(right = 4.dp)
-                    pillButton("清除", M3.error) {
-                        ChatBackground.clear()
+                    pillButton("清当前群", M3.error) {
+                        if (CurrentContact.peerUid.isBlank()) {
+                            Utils.toast(this@设置页, "请先进入一个聊天再清除")
+                        } else {
+                            ChatBackground.clear(CurrentContact.peerUid)
+                            updateBgStatus()
+                            Utils.toast(this@设置页, "已清除当前会话背景")
+                        }
+                    }.weight(1f).margin(left = 4.dp)
+                }
+            add<LinearLayout>()
+                .width(FILL)
+                .padding(top = 8.dp)
+                .content {
+                    pillButton("全局背景", ACCENT) {
+                        pendingBgPeer = ""
+                        pickChatBackground()
+                    }
+                        .weight(1f)
+                        .margin(right = 4.dp)
+                    pillButton("清全局", M3.error) {
+                        ChatBackground.clear(null)
                         updateBgStatus()
-                        Utils.toast(this@设置页, "已清除聊天背景")
+                        Utils.toast(this@设置页, "已清除全局背景")
                     }.weight(1f).margin(left = 4.dp)
                 }
         }
@@ -1103,12 +1151,23 @@ class 设置页 : SettingsActivity() {
         when (requestCode) {
             REQ_PICK_CHAT_BG -> {
                 val uri = data?.data
-                if (resultCode == Activity.RESULT_OK && uri != null && ChatBackground.save(this, uri)) {
-                    Utils.toast(this, "已设置聊天背景")
+                if (resultCode == Activity.RESULT_OK && uri != null) {
+                    // 进入裁剪页：强制裁到屏幕比例，可拖动/缩放调整位置；确定后保存并（可选）莫奈取色。
+                    val peer = pendingBgPeer ?: ""
+                    val intent = Intent(this, CropBackgroundActivity::class.java).apply {
+                        putExtra(CropBackgroundActivity.EXTRA_URI, uri)
+                        putExtra(CropBackgroundActivity.EXTRA_PEER, peer)
+                        putExtra(CropBackgroundActivity.EXTRA_MONET, true)
+                    }
+                    runCatching { startActivityForResult(intent, REQ_CROP_CHAT_BG) }
+                        .onFailure { Utils.toast(this, "无法打开裁剪页: ${it.message}") }
                 } else {
-                    Utils.toast(this, "设置失败")
+                    Utils.toast(this, "未选择图片")
                 }
                 updateBgStatus()
+            }
+            REQ_CROP_CHAT_BG -> {
+                if (resultCode == Activity.RESULT_OK) updateBgStatus()
             }
             REQ_IMPORT_SETTINGS -> {
                 val uri = data?.data
