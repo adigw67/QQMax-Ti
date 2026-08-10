@@ -32,6 +32,8 @@ class SelfTabClearCredit : SelfFragment() {
         result.findViewById<TextView>(2114521808)?.text = ""
         result.onEachLayout {
             result.replaceTextRecursive("QQPro", "QQMax-Ti")
+            result.replaceTextRecursive("NWear-QQ", "")
+            result.replaceTextRecursive("NWearQQ", "")
         }
         return result
     }
