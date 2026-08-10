@@ -7,8 +7,8 @@ import org.json.JSONObject
  * Serialises only the QQPro settings-page settings ([Settings.all]) to a portable JSON or XML
  * blob and restores them. Keys are matched against the live [Settings.all] registry on import, so
  * unknown / stale keys are ignored and each value is parsed back to its real type by the owning
- * [momoi.mod.qqpro.Pref]. Settings live across three SharedPreferences (qqpro / wearqq /
- * OTAManager2); writing through the Pref objects keeps each one in its correct store.
+ * [momoi.mod.qqpro.Pref]. Settings live across two SharedPreferences (qqpro / wearqq);
+ * writing through the Pref objects keeps each one in its correct store.
  */
 object SettingsBackup {
     const val VERSION = 1

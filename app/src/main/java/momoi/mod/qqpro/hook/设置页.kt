@@ -47,7 +47,6 @@ import momoi.mod.qqpro.lib.material.MaterialSymbols
 import momoi.mod.qqpro.lib.material.leadingSymbol
 import momoi.mod.qqpro.lib.material.showColorPicker
 import momoi.mod.qqpro.hook.view.buildAboutView
-import momoi.mod.qqpro.ota.OTAManager2
 import momoi.mod.qqpro.StyleChooserActivity
 import momoi.mod.qqpro.MenuEditorActivity
 import momoi.mod.qqpro.lib.height
@@ -556,10 +555,6 @@ class 设置页 : SettingsActivity() {
             textInput("模型", "使用的模型名，留空用默认", Settings.summarizeApiModel)
         },
         SettingsCategory("关于与更新", "版本更新") {
-            switch("自动检查更新", "启动时检查 QQMax-Ti 新版本，可在关于页手动检查", Settings.autoUpdateCheck)
-            actionCard("立即检查更新", "现在就检查 QQMax-Ti 是否有新版本") {
-                OTAManager2(this@设置页).checkUpdate(true)
-            }
             actionCard("关于", "版本信息与致谢") {
                 showAbout()
             }
@@ -941,7 +936,6 @@ class 设置页 : SettingsActivity() {
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
         val content = buildAboutView(
             this,
-            onCheckUpdate = { OTAManager2(this).checkUpdate(true); dialog.dismiss() },
             onClose = { dialog.dismiss() },
         )
         dialog.setContentView(content)

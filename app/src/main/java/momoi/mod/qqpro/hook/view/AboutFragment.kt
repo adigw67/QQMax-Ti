@@ -18,15 +18,14 @@ import momoi.mod.qqpro.lib.padding
 import momoi.mod.qqpro.lib.text
 import momoi.mod.qqpro.lib.textColor
 import momoi.mod.qqpro.lib.textSize
-import momoi.mod.qqpro.ota.OTAManager2
 import momoi.mod.qqpro.util.Utils
 
 /**
  * About dialog for QQ Max. A full-screen [MyDialogFragment] rather than the native TipsUtils
  * dialog, which renders with oversized margins on the round watch screen (the app forces a tiny
  * compile SDK and overrides display DPI — see [LinkOpenFragment]). Shows the app icon, version
- * and credits (scrollable) plus a 检查更新 button that force-checks via [OTAManager2]. Built on the
- * shared [M3Dialog] scaffold, wrapped in [SwipeBackLayout] so a left-to-right swipe dismisses it.
+ * and credits (scrollable). Built on the shared [M3Dialog] scaffold, wrapped in [SwipeBackLayout]
+ * so a left-to-right swipe dismisses it.
  */
 class AboutFragment : MyDialogFragment() {
     override fun onCreateView(
@@ -35,24 +34,22 @@ class AboutFragment : MyDialogFragment() {
         savedInstanceState: Bundle?
     ): View {
         val ctx = inflater.context
-        // Swipe-to-dismiss handles closing, so no 关闭 button here (onClose = null).
+        // Swipe-to-dismiss + a 关闭 button for explicit close.
         val dialog = buildAboutView(
             ctx,
-            onCheckUpdate = { OTAManager2(ctx).checkUpdate(true); dismiss() },
+            onClose = { dismiss() },
         )
         return swipeBackWrap(dialog)
     }
 }
 
 /**
- * Build the shared About content (icon / version / build time / credits) with a 检查更新 button and,
- * when [onClose] is supplied, a 关闭 button. Reused by [AboutFragment] (swipe-to-dismiss, no close
- * button) and by the settings activity's 关于 entry (a raw [android.app.Dialog] that needs a close
- * button since it isn't swipe-wrapped).
+ * Build the shared About content (icon / version / build time / credits) with a 关闭 button.
+ * Reused by [AboutFragment] (swipe-to-dismiss + close button) and by the settings activity's 关于
+ * entry (a raw [android.app.Dialog] that needs a close button since it isn't swipe-wrapped).
  */
 fun buildAboutView(
     ctx: android.content.Context,
-    onCheckUpdate: () -> Unit,
     onClose: (() -> Unit)? = null,
 ): M3Dialog = M3Dialog(ctx)
     .body {
@@ -94,6 +91,5 @@ fun buildAboutView(
             .padding(bottom = 12.dp)
     }
     .actions {
-        action("检查更新", M3Button.Variant.FILLED) { onCheckUpdate() }
         if (onClose != null) action("关闭", M3Button.Variant.TEXT) { onClose() }
     }

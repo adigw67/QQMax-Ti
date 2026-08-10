@@ -8,15 +8,12 @@ import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.StyleChooserActivity
 import momoi.mod.qqpro.applyOrientationSetting
-import momoi.mod.qqpro.ota.OTAManager2
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.watchdog.Watchdog
 
 /**
- * Update check on launch. Delegates to [OTAManager2], which queries the GitLab Releases API of
- * https://gitlab.com/ailife8881/qqmax, compares the latest release tag against this app's own
- * versionName, and (if newer) prompts to download+install the release APK in-app. Respects the
- * user's "不再提醒" choice (stored by OTAManager2 itself).
+ * MainActivity launch hook: pre-agree privacy, install the watchdog, apply fonts/orientation,
+ * fix image auto-download, online-status polling and the style chooser on first launch.
  */
 @Mixin
 class 更新检查 : MainActivity() {
@@ -48,7 +45,6 @@ class 更新检查 : MainActivity() {
         // The base QQ APK never requests Android 13+ POST_NOTIFICATIONS, so notifications are dropped
         // until granted. Ask on launch (no-op below API 33 / once already granted).
         NotificationPermission.ensure(this)
-        OTAManager2(this).checkUpdate(false)
         // First launch (never picked a UI style): show the Material-vs-original chooser on top.
         if (!Settings.styleChooserSeen.value) {
             runCatching { startActivity(Intent(this, StyleChooserActivity::class.java)) }
