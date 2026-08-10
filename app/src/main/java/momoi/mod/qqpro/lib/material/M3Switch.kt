@@ -32,9 +32,10 @@ class M3Switch(ctx: Context) : View(ctx), Checkable {
     private val thumbPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val rect = RectF()
 
-    private val w = 42.dp
-    private val h = 24.dp
-    private val pad = 3.dp.toFloat()
+    // MD3 开关：轨道 52×32dp、全圆角；thumb 随轨道按比例（≈22dp），按压/点按目标充足。
+    private val w = 52.dp
+    private val h = 32.dp
+    private val pad = 5.dp.toFloat()
 
     init {
         isClickable = true

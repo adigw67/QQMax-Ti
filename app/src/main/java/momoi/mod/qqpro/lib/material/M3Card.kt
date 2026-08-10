@@ -18,7 +18,8 @@ import momoi.mod.qqpro.lib.vertical
 class M3Card(ctx: Context) : LinearLayout(ctx) {
     init {
         vertical()
-        background = M3.rounded(M3.surfaceContainer, M3.radiusLg)
+        // MD3 card 圆角 = 12dp（radiusMd）；16dp 留给更突出的容器。
+        background = M3.rounded(M3.surfaceContainer, M3.radiusMd)
         setPadding(4.dp, 4.dp, 4.dp, 4.dp)
         setClipToOutlineCompat(false)
     }

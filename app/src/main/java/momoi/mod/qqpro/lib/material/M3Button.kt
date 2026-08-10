@@ -32,8 +32,10 @@ class M3Button(ctx: Context) : TextView(ctx) {
         gravity = Gravity.CENTER
         isSingleLine = true
         textSize = 14f
-        typeface = Typeface.DEFAULT_BOLD
-        setPadding(20.dp, 9.dp, 20.dp, 9.dp)
+        // MD3 label-large：14sp sans-serif-medium（500），不是粗体。
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        setPadding(20.dp, 10.dp, 20.dp, 10.dp)
+        minHeight = 40.dp
         isClickable = true
         isFocusable = true
         // Spring press-recoil: 0.96 on down, spring back with gentle overshoot (low stiffness +

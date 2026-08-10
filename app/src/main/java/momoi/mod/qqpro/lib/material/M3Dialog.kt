@@ -1,6 +1,7 @@
 package momoi.mod.qqpro.lib.material
 
 import android.content.Context
+import android.graphics.Typeface
 import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
@@ -37,7 +38,9 @@ class M3Dialog(ctx: Context) : ScrollView(ctx) {
         setPadding(20.dp, 20.dp, 20.dp, 20.dp)
     }
     private val titleView = TextView(ctx).apply {
-        textSize = 17f; setTextColor(M3.onSurface); gravity = Gravity.CENTER
+        // MD3 对话框标题接近 headline-small，手表上收敛到 18sp + medium 字重。
+        textSize = 18f; setTextColor(M3.onSurface); gravity = Gravity.CENTER
+        typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         setPadding(0, 0, 0, 12.dp); visibility = View.GONE
     }
     private val actionsRow = LinearLayout(ctx).vertical().apply {
