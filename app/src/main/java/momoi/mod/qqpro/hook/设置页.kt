@@ -160,6 +160,13 @@ class 设置页 : SettingsActivity() {
         settingsRoot = root
         settingsContainer = container
         showCategoryList()
+        // 字体包启用时，把设置页文字也强制换成 MiSans（反射换默认字体在部分 ROM 无效）。
+        runCatching { window.decorView.post { FontPack.applyAll(window.decorView) } }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        runCatching { FontPack.applyAll(window.decorView) }
     }
 
     /** Build the persistent top-level list: app header + one tappable card per category. */

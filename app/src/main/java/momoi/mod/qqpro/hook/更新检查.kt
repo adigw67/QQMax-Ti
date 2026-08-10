@@ -33,6 +33,8 @@ class 更新检查 : MainActivity() {
         // 可选联网字体包：已下载且启用时，把进程内默认字体替换为 MiSans（Unifont 兜底）。
         // 在 UI 构建前应用，之后创建的 TextView 全部生效。
         FontPack.applyDefaults()
+        // 某些 ROM 上反射换默认字体不生效，内容构建完再遍历视图树强制应用一遍。
+        runCatching { window.decorView.post { FontPack.applyAll(window.decorView) } }
         // 图片自动下载开关覆盖（内核按 UIConfig 键向 Java 要配置，原版返回空串导致收到的图片
         // 永不下载）。放在 MainActivity 启动后，QAutoInject 已填充处理器表，此时覆盖生效。
         PicAutoDownload.install()
@@ -48,5 +50,11 @@ class 更新检查 : MainActivity() {
             runCatching { startActivity(Intent(this, StyleChooserActivity::class.java)) }
                 .onFailure { Utils.log("StyleChooser: launch on start failed: $it") }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 主界面（聊天列表等）多在启动后异步构建，每次回到前台再强制应用一次字体。
+        runCatching { FontPack.applyAll(window.decorView) }
     }
 }

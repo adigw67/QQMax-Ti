@@ -7,6 +7,9 @@ import android.text.SpannableStringBuilder
 import android.text.TextPaint
 import android.text.style.MetricAffectingSpan
 import android.util.SparseArray
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.safeCacheDir
 import momoi.mod.qqpro.util.Utils
@@ -58,6 +61,11 @@ object FontPack {
     private var boldTypeface: Typeface? = null
     private var uniTypeface: Typeface? = null
     private var miCoverage: CmapCoverage? = null
+    // 替换前的原始系统字体对象：某些 ROM 上反射换 DEFAULT 不生效（系统字体走私有路径），
+    // 需要 [applyAll] 遍历视图树，把仍在使用这些原始字体的 TextView 强制换成 MiSans。
+    private var originalDefault: Typeface? = null
+    private var originalDefaultBold: Typeface? = null
+    private val originalFamilies = HashMap<String, Typeface>()
 
     private fun dir(): File? = Utils.application.safeCacheDir?.let { File(it, "fonts") }
     fun regularFile(): File? = dir()?.let { File(it, "MiSans-Regular.ttf") }
@@ -84,6 +92,8 @@ object FontPack {
     fun applyDefaults() {
         if (!installed()) return
         runCatching {
+            originalDefault = Typeface.DEFAULT
+            originalDefaultBold = Typeface.DEFAULT_BOLD
             val mi = Typeface.createFromFile(regularFile())
             val bold = Typeface.createFromFile(boldFile())
             miTypeface = mi
@@ -91,6 +101,20 @@ object FontPack {
             uniTypeface = Typeface.createFromFile(unifontFile())
             miCoverage = CmapCoverage(regularFile()!!)
 
+            runCatching {
+                val f = Typeface::class.java.getDeclaredField("sSystemFontMap")
+                f.isAccessible = true
+                @Suppress("UNCHECKED_CAST")
+                (f.get(null) as? HashMap<String, Typeface>)?.let { map ->
+                    originalFamilies.clear()
+                    originalFamilies.putAll(map)
+                    for (k in listOf(
+                        "sans-serif", "sans-serif-medium", "sans-serif-light",
+                        "sans-serif-thin", "sans-serif-condensed", "sans-serif-condensed-light",
+                    )) if (map.containsKey(k)) map[k] = mi
+                    if (map.containsKey("sans-serif-bold")) map["sans-serif-bold"] = bold
+                }
+            }
             setStatic(Typeface::class.java, "DEFAULT", mi)
             setStatic(Typeface::class.java, "DEFAULT_BOLD", bold)
             runCatching {
@@ -102,20 +126,33 @@ object FontPack {
                     arr.put(1, bold)
                 }
             }
-            runCatching {
-                val f = Typeface::class.java.getDeclaredField("sSystemFontMap")
-                f.isAccessible = true
-                @Suppress("UNCHECKED_CAST")
-                (f.get(null) as? HashMap<String, Typeface>)?.let { map ->
-                    for (k in listOf(
-                        "sans-serif", "sans-serif-medium", "sans-serif-light",
-                        "sans-serif-thin", "sans-serif-condensed", "sans-serif-condensed-light",
-                    )) if (map.containsKey(k)) map[k] = mi
-                    if (map.containsKey("sans-serif-bold")) map["sans-serif-bold"] = bold
-                }
-            }
             Utils.log("FontPack: defaults applied (MiSans + Unifont fallback)")
         }.onFailure { Utils.log("FontPack: applyDefaults failed: $it") }
+    }
+
+    /**
+     * 遍历视图树，把仍在使用原始系统字体（默认/加粗/各 sans-serif 家族）的 TextView
+     * 强制换成 MiSans。在页面内容构建完成（或 onResume）后调用，保证在反射替换
+     * 不生效的 ROM 上也能全部生效。
+     */
+    fun applyAll(root: View) {
+        if (!installed()) return
+        val mi = miTypeface ?: return
+        val bold = boldTypeface ?: mi
+        if (root is TextView) {
+            val cur = root.typeface
+            val target = when {
+                cur == null || cur == originalDefault || cur == Typeface.DEFAULT -> mi
+                cur == originalDefaultBold || cur == Typeface.DEFAULT_BOLD -> bold
+                else -> originalFamilies.entries.firstOrNull { it.value == cur }?.let {
+                    if (it.key.contains("bold") || it.key.contains("medium")) bold else mi
+                }
+            }
+            if (target != null && cur != target) root.typeface = target
+        }
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) applyAll(root.getChildAt(i))
+        }
     }
 
     private fun setStatic(cls: Class<*>, name: String, value: Any) {
