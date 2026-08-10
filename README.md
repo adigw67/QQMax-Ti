@@ -17,7 +17,7 @@ QQProMax 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研
 - 补齐了大量手表端缺失或难用的功能（完整输入、表情、语音、大表情、群管理、说说等）；
 - 所有 hook 逻辑均在本项目的 `app/src/main/java/momoi/` 与 `app/src/main/java/com/tencent/` 中实现，构建时再注入原版。
 
-当前版本：**M2.5-4.4（v21 / API19fix）**，包名 `com.tencent.qqlite`，构建日期 2026-08-10。
+当前版本：**M2.5-4.4（v22 / API19fix）**，包名 `com.tencent.qqlite`，构建日期 2026-08-10。
 
 **v17 新增**：设置 → 外观主题 →「联网字体包」——从官方源下载 MiSans（优先显示）+ GNU Unifont（生僻字兜底），仅本应用进程内生效，防生僻字/扩展区字形缺失。
 
@@ -31,13 +31,15 @@ QQProMax 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研
 
 **v21 修复**：组装顺序 bug——`BoostMultiDex` 空壳被随后的 `WatchApplication` 替换覆盖回真库，导致每次冷启动都运行 OptimizeService 做 5-dex 优化（弱手表上 >10s ANR、CPU 满载、内存分页风暴，表现为「点聊天/群聊卡」）。现已改为替换后立即落盘，冷启动不再启动 OptimizeService，装机实测无 ANR、群聊 1s 打开。
 
+**v22 修复**：深色模式下「我的」页操作横幅、群聊设置横幅整行纯白——`M3.ripple(null)` 在 API 19 的 `StateListDrawable` 回退把未按压默认态画成了白色 mask，所有 `M3ListItem` 行全白；默认态改为透明（与 API 21+ 一致），实测纯白占比 92% → 0%。
+
 ## 本目录内容
 
 ```
 QQProMax-M2.5-4.4-发布包/
 ├── README.md                  ← 本文件（自述文档）
 ├── 安装包/
-│   └── QQMax-Ti_M2.5-4.4-API19fix-v21.apk   ← 当前可安装包（5-dex，腾讯原签名保留）
+│   └── QQMax-Ti_M2.5-4.4-API19fix-v22.apk   ← 当前可安装包（5-dex，腾讯原签名保留）
 ├── 文档/
 │   ├── ApkMixin.md            ← ApkMixin 注入机制原始文档
 │   ├── HOOKS.md               ← hook 方法技术文档（@Mixin 机制 + 关键 hook 清单）
