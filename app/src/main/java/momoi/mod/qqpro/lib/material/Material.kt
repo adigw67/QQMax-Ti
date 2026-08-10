@@ -288,7 +288,11 @@ object M3 {
             // StateListDrawable that shows the ripple color while pressed, over the same mask.
             StateListDrawable().apply {
                 addState(intArrayOf(android.R.attr.state_pressed), ColorDrawable(rippleColor))
-                addState(IntArray(0), mask)
+                // 默认态（未按压）必须透明：content==null 时 mask 是纯白 ColorDrawable，
+                // 直接画 mask 会让 M3ListItem 等整行纯白（深色模式下「我的」页操作横幅、
+                // 群聊设置横幅全白就是这个）。API 21+ 的 RippleDrawable 无 content 时
+                // 默认不画任何东西，这里保持一致。
+                addState(IntArray(0), content ?: ColorDrawable(Color.TRANSPARENT))
             }
         }
     }
