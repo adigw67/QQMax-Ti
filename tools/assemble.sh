@@ -56,6 +56,9 @@ java -cp "$CP" CompareDex \
   2>/dev/null | grep '^DIFF' | sed 's/^DIFF //' | sort -u > "$TARGETS_FILE"
 grep -q 'Lcom/bytedance/boost_multidex/OptimizeService;' "$TARGETS_FILE" || \
   echo 'Lcom/bytedance/boost_multidex/OptimizeService;' >> "$TARGETS_FILE"
+# 并入已知必需的 hook 目标（防止 diff 生成法漏掉历史类，见 required_targets.txt）。
+grep -v '^#' "$TOOLS_DIR/required_targets.txt" | grep -v '^$' >> "$TARGETS_FILE"
+sort -u "$TARGETS_FILE" -o "$TARGETS_FILE"
 echo "    targets = $(wc -l < "$TARGETS_FILE")"
 
 echo "==> [2/6] 定位并应用多 dex 补丁 (BoostMultiDex 空壳 + WatchApplication 按进程目录)"

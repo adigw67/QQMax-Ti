@@ -1,0 +1,8 @@
+# 已知必需的 hook 目标：BuildFinal2 的 targets 由「原版 vs 旧版」差异生成，一旦某个类在
+# 旧版里已经被漏掉（或其字节码恰好等于原版），下一轮 diff 就永远不再包含它，hook 被静默丢弃。
+# 这里显式列出这类必须注入的类，assemble.sh 每次都会并入 targets。
+#
+# - InputBarController$inputContent$2: 聊天底部输入框 MD 化（聊天底部按钮调整 @Mixin）
+# - TipsUtils: 破坏性确认对话框 M3 化（TipsDialogHook @StaticHook，退出登录/清空消息等）
+Lcom/tencent/watch/aio_impl/coreImpl/vb/InputBarController$inputContent$2;
+Lcom/tencent/qqnt/watch/ui/componet/tips/TipsUtils;
