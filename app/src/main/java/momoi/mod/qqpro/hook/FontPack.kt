@@ -172,37 +172,27 @@ object FontPack {
                 (f.get(null) as? HashMap<String, Typeface>)?.let { map ->
                     originalFamilies.clear()
                     originalFamilies.putAll(map)
-                    // 基础字重：常规文字映射到用户选择的字重（常规/中等/粗体）。
-                    val base = when (Settings.fontPackWeight.value) {
-                        2 -> bold
-                        1 -> medium ?: mi
-                        else -> mi
-                    }
+                    // MD 标准字重：常规文字用 Regular(400)、中等文字用 Medium(500)、粗体用 Bold(700)。
                     for (k in listOf(
                         "sans-serif", "sans-serif-light",
                         "sans-serif-thin", "sans-serif-condensed", "sans-serif-condensed-light",
-                    )) if (map.containsKey(k)) map[k] = base
-                    if (map.containsKey("sans-serif-medium")) map["sans-serif-medium"] = medium ?: base
+                    )) if (map.containsKey(k)) map[k] = mi
+                    if (map.containsKey("sans-serif-medium")) map["sans-serif-medium"] = medium ?: mi
                     if (map.containsKey("sans-serif-bold")) map["sans-serif-bold"] = bold
                 }
             }
-            val base = when (Settings.fontPackWeight.value) {
-                2 -> bold
-                1 -> medium ?: mi
-                else -> mi
-            }
-            setStatic(Typeface::class.java, "DEFAULT", base)
+            setStatic(Typeface::class.java, "DEFAULT", mi)
             setStatic(Typeface::class.java, "DEFAULT_BOLD", bold)
             runCatching {
                 val f = Typeface::class.java.getDeclaredField("sDefaults")
                 f.isAccessible = true
                 @Suppress("UNCHECKED_CAST")
                 (f.get(null) as? SparseArray<Typeface>)?.let { arr ->
-                    arr.put(0, base)
+                    arr.put(0, mi)
                     arr.put(1, bold)
                 }
             }
-            Utils.log("FontPack: defaults applied (MiSans weight=${Settings.fontPackWeight.value} + Unifont fallback)")
+            Utils.log("FontPack: defaults applied (MiSans MD 标准字重: Regular/Medium/Bold + Unifont fallback)")
         }.onFailure { Utils.log("FontPack: applyDefaults failed: $it") }
     }
 
@@ -216,11 +206,8 @@ object FontPack {
         val mi = miTypeface ?: return
         val medium = mediumTypeface ?: mi
         val bold = boldTypeface ?: mi
-        val base = when (Settings.fontPackWeight.value) {
-            2 -> bold
-            1 -> medium
-            else -> mi
-        }
+        // MD 标准字重：常规→Regular，medium→Medium，bold→Bold。
+        val base = mi
         if (root is TextView) {
             val text = root.text
             if (text.isNullOrEmpty()) {

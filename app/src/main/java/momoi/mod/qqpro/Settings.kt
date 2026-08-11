@@ -56,10 +56,6 @@ object Settings {
     // 可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用进程内生效，
     // 防止生僻字/扩展区字形缺失。默认关闭；需先下载字体包。
     val fontPackEnabled = BooleanPref("fontPackEnabled", false)
-    // 联网字体包的基础字重：0=常规(Regular) 1=中等(Medium) 2=粗体(Bold)。
-    // 控制 sans-serif 等常规文字映射到 MiSans 的哪个字重；sans-serif-medium 用 Medium、
-    // sans-serif-bold 始终用 Bold。修改后需重启应用完全生效。
-    val fontPackWeight = IntPref("fontPackWeight", 1)
     // All theme-token prefs together (for "restore defaults" — clears every custom M3 color).
     val themeTokens: List<StringPref> get() = listOf(
         themeColor, themeOnPrimary, themePrimaryContainer, themeOnPrimaryContainer,

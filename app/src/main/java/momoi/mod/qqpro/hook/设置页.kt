@@ -313,16 +313,8 @@ class 设置页 : SettingsActivity() {
                     .onFailure { Utils.log("设置页: 横屏模式切换失败: $it") }
             }
             switch("跟随系统主题色", "在支持 Material You 动态取色的设备(Android 12 / API 31 及以上)上，未单独设置的颜色自动取用系统壁纸配色(按明暗基调映射)；单独设置的颜色仍优先。旧系统(多数手表)无动态取色则用内置配色。$note", Settings.followSystemTheme)
-            section("联网字体包", "可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用生效，防止生僻字缺失；下载后重启应用全部界面生效")
+            section("联网字体包", "可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用生效，防止生僻字缺失；字重按 MD 标准映射（常规 Regular / 中等 Medium / 粗体 Bold）；下载后重启应用全部界面生效")
             switch("启用联网字体包", "默认关闭；下载字体包后开启，应用内文字优先用 MiSans 渲染", Settings.fontPackEnabled)
-            selector("字体字重", "联网字体包的基础字重：常规/中等/粗体。标题等粗体文字始终用 Bold，sans-serif-medium 用 Medium；修改后重进页面生效，完全生效需重启应用", listOf("常规", "中等", "粗体"),
-                current = { Settings.fontPackWeight.value }) { which ->
-                Settings.fontPackWeight.value = which
-                runCatching {
-                    FontPack.applyDefaults()
-                    FontPack.applyAll(window.decorView)
-                }.onFailure { Utils.log("设置页: 字重切换应用失败: $it") }
-            }
             card { card ->
                 card.vertical()
                 card.content {
