@@ -466,8 +466,8 @@ class 设置页 : SettingsActivity() {
             slider("图片最大高度", "聊天图片最大显示高度(占屏幕高度比例)，默认 0.5", Settings.picMaxHeightRatio, min = 0.3f, max = 1f)
             switch("长截图支持", "查看大图时，若图片高度≥屏幕2倍(长截图)，默认按屏幕宽度铺满并定位到顶部，可上下滚动阅读；双击循环缩放：1档整图高度·2档铺满宽度·3档进一步放大", Settings.longScreenshot)
             slider("气泡圆角半径", "聊天气泡远离发送方的一侧用此大圆角、发送侧用其 40% 小圆角（MD3 造型）；合并转发/聊天记录块与回复块仍为统一圆角(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
-            colorPicker("我的气泡颜色", "留空为材料色", Settings.bubbleColorSelf, MaterialColors.ACCENT,
-                { M3.parseColorOrNull(Settings.bubbleColorSelf.value) ?: M3.primary })
+            colorPicker("我的气泡颜色", "留空为材料色（不透明主色容器）", Settings.bubbleColorSelf, MaterialColors.ACCENT,
+                { M3.parseColorOrNull(Settings.bubbleColorSelf.value) ?: M3.tonalSolid })
             colorPicker("对方气泡颜色", "留空为材料色", Settings.bubbleColorOther, MaterialColors.SURFACE + MaterialColors.ACCENT,
                 { M3.parseColorOrNull(Settings.bubbleColorOther.value) ?: M3.surfaceContainer })
             colorPicker("我的文字颜色", "留空为自动对比我的气泡色", Settings.textColorSelf, MaterialColors.ON,
@@ -475,7 +475,6 @@ class 设置页 : SettingsActivity() {
             colorPicker("对方文字颜色", "留空为自动对比对方气泡色", Settings.textColor, MaterialColors.ON,
                 { M3.parseColorOrNull(Settings.textColor.value) ?: M3.onColor(BubbleCorner.resolvedBubbleColor(0)) })
             switch("聊天背景（实验性）", "启用聊天页背景图：每个会话可单独设置，另有全局背景兜底；设置时强制裁剪到屏幕比例、可拖动调整位置", Settings.chatBgEnabled)
-            switch("自动莫奈取色（实验性）", "设置背景后自动从背景图提取主色作为 UI 主题色（会清除自定义配色）", Settings.chatBgMonet)
             actionCard("用图片取色（莫奈）", "上传一张图片（不必是聊天背景），取其主色设为 UI 主题色；会清除自定义配色") {
                 pickMonetImage()
             }
@@ -1208,7 +1207,6 @@ class 设置页 : SettingsActivity() {
                     val intent = Intent(this, CropBackgroundActivity::class.java).apply {
                         putExtra(CropBackgroundActivity.EXTRA_URI, uri)
                         putExtra(CropBackgroundActivity.EXTRA_PEER, peer)
-                        putExtra(CropBackgroundActivity.EXTRA_MONET, true)
                     }
                     runCatching { startActivityForResult(intent, REQ_CROP_CHAT_BG) }
                         .onFailure { Utils.toast(this, "无法打开裁剪页: ${it.message}") }

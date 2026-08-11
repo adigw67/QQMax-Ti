@@ -59,7 +59,6 @@ class GroupAvatarPreview : SettingFrame() {
                 ctx.startActivity(Intent(ctx, CropBackgroundActivity::class.java).apply {
                     putExtra(CropBackgroundActivity.EXTRA_URI, uri)
                     putExtra(CropBackgroundActivity.EXTRA_PEER, peer)
-                    putExtra(CropBackgroundActivity.EXTRA_MONET, true)
                 })
             }.onFailure { Utils.log("ChatBgEntry: 打开裁剪页失败: $it") }
         }

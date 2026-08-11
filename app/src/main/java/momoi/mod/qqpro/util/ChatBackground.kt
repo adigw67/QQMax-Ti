@@ -26,7 +26,7 @@ import java.io.FileOutputStream
  *  - 加载时按屏幕降采样，返回带「变暗遮罩」（[Settings.chatBgDarken]）的 Drawable，
  *    由调用方以 CENTER_CROP 铺满聊天内容区。
  *  - 图片在设置页经过强制裁剪（屏幕比例、可拖动调整位置）后以 [saveCropped] 保存。
- *  - [monetColor]：从图片提取主色，供「自动莫奈取色」设置 UI 主题色（实验性）。
+ *  - [monetColor]：从图片提取主色，供设置页「用图片取色（莫奈）」设置 UI 主题色（与背景无关）。
  */
 object ChatBackground {
     private fun dir(): File = File(Utils.application.filesDir, "chat_bg").apply { mkdirs() }

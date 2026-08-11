@@ -33,13 +33,14 @@ object BubbleCorner {
 
     /**
      * The effective bubble fill color for a side: the user's per-side override, else the Material
-     * token (loc==0 → other → surfaceContainerLow; else → self → primaryContainer). MD3 对话气泡
-     * 用 tonal 容器色：对方 surfaceContainerLow、自己 primaryContainer。Shared so the message text
-     * color can auto-contrast against it (see [AIOCell.applyMsgTextStyle]).
+     * token (loc==0 → other → surfaceContainerLow; else → self → tonalSolid——primaryContainer 的
+     * 不透明版本，叠加在 surface 上）。MD3 对话气泡用 tonal 容器色：对方 surfaceContainerLow、
+     * 自己 primaryContainer；自己一侧必须不透明，否则聊天背景图上气泡透底发暗。Shared so the
+     * message text color can auto-contrast against it (see [AIOCell.applyMsgTextStyle]).
      */
     fun resolvedBubbleColor(loc: Int): Int {
         val override = if (loc == 0) Settings.bubbleColorOther else Settings.bubbleColorSelf
-        return parseHexColor(override.value) ?: (if (loc == 0) M3.surfaceContainerLow else M3.primaryContainer)
+        return parseHexColor(override.value) ?: (if (loc == 0) M3.surfaceContainerLow else M3.tonalSolid)
     }
 
     fun apply(widget: AIOCellGroupWidget) {

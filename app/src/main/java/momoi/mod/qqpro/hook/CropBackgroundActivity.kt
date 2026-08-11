@@ -20,7 +20,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Toast
-import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.lib.dp
 import momoi.mod.qqpro.lib.material.M3
 import momoi.mod.qqpro.lib.material.M3Button
@@ -29,26 +28,23 @@ import momoi.mod.qqpro.util.Utils
 
 /**
  * 聊天背景裁剪页（实验性）：把选中的图片强制裁到聊天背景比例（屏幕宽高比），
- * 拖动/双指缩放调整位置，确定后保存为该会话（或全局）背景；若开启「自动莫奈取色」
- * 则从裁剪结果提取主色设置 UI 主题色。
+ * 拖动/双指缩放调整位置，确定后保存为该会话（或全局）背景。莫奈取色不在此处自动执行——
+ * 需要取色时走设置页「用图片取色（莫奈）」单独上传图片。
  */
 class CropBackgroundActivity : Activity() {
     companion object {
         const val EXTRA_URI = "bg_uri"
         const val EXTRA_PEER = "bg_peer"
-        const val EXTRA_MONET = "bg_monet"
     }
 
     private var srcBitmap: Bitmap? = null
     private var peerUid: String? = null
-    private var monet = false
     private lateinit var imageView: PanZoomImageView
     private lateinit var overlay: CropOverlayView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         peerUid = intent.getStringExtra(EXTRA_PEER)
-        monet = intent.getBooleanExtra(EXTRA_MONET, false)
         val uri: Uri? = intent.getParcelableExtra(EXTRA_URI)
         if (uri == null) { toast("没有图片"); finish(); return }
         srcBitmap = decodeSampled(uri)
@@ -94,14 +90,7 @@ class CropBackgroundActivity : Activity() {
         val h = (frame.height() * sy).toInt().coerceIn(1, bmp.height - top)
         val crop = Bitmap.createBitmap(bmp, left, top, w, h)
         if (!ChatBackground.saveCropped(crop, peerUid)) { toast("保存失败"); return }
-        if (monet && Settings.chatBgMonet.value) {
-            val color = ChatBackground.monetColor(crop)
-            Settings.themeTokens.forEach { it.value = "" }
-            Settings.themeColor.value = "#%06X".format(color and 0xFFFFFF)
-            toast("已应用背景并莫奈取色")
-        } else {
-            toast("已设置背景")
-        }
+        toast("已设置背景")
         crop.recycle()
         setResult(RESULT_OK)
         finish()
