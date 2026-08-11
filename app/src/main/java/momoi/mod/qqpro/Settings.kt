@@ -452,6 +452,12 @@ object Settings {
     // Allow long-pressing the chat send button to translate the input into translateSendLang (without
     // sending). Default on.
     val translateSendButton = BooleanPref("translateSendButton", true)
+    // 翻译服务：custom=自定义AI（默认，复用聊天总结的 Key，国内推荐 DeepSeek） / ms=微软翻译（Azure Key） / google=谷歌（海外）
+    val translateProvider = StringPref("translateProvider", "custom")
+    // 微软翻译 Azure Translator 的 Ocp-Apim-Subscription-Key。
+    val translateMsKey = StringPref("translateMsKey", "")
+    // 微软翻译区域（可选；中国区 Key 必填），如 eastasia。
+    val translateMsRegion = StringPref("translateMsRegion", "")
 
     // ===== 聊天总结 (by AILIFE) =====
     // The long-press "总结" entry's visibility now lives in 菜单自定义 ([longPressMenuOrder]).
@@ -566,6 +572,7 @@ object Settings {
         picMaxHeightRatio, longScreenshot, bubbleCornerRadius, bubbleColorSelf, bubbleColorOther, textColor, textColorSelf, linkColor, contactSections, materialContactsList, materialChatList, materialQZoneBar, qzoneBarSpread, qzoneInlineVideo, qzoneMiniAppCard, materializeQzone, qzoneTruncatePost, qzoneTruncateImages,
         profileNameMultiline, useRichProfile, useM3Settings, materializeLogin,
         translateViewLang, translateSendLang, translateShowAllSwitch, translateOwnMessages, translateReplaceInPlace, translateSendButton,
+        translateProvider, translateMsKey, translateMsRegion,
         multiSelectTimeOrder, multiSelectCopySender,
         screenshotTitlebar, screenshotInputBar, screenshotSelfAsOther, screenshotShowIdentity, screenshotWatermark,
         callNotifyFix, callFullScreenIntent, callBluetoothRoute, callCameralessVideo, materializeCall,

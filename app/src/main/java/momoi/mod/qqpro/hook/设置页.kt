@@ -593,6 +593,16 @@ class 设置页 : SettingsActivity() {
                 { M3.parseColorOrNull(Settings.linkColor.value) ?: M3.primary })
         },
         SettingsCategory("翻译", "消息翻译与发送翻译") {
+            val translateProviders = listOf("custom", "ms", "google")
+            val translateProviderNames = listOf("自定义AI", "微软翻译", "谷歌(海外)")
+            selector(
+                "翻译服务", "自定义AI=复用「聊天总结」的 API Key/接口/模型（国内推荐 DeepSeek，默认）；微软翻译=Azure 需填下方 Key；谷歌=海外可用",
+                translateProviderNames,
+                current = { translateProviders.indexOf(Settings.translateProvider.value).coerceAtLeast(0) },
+                onPick = { which -> Settings.translateProvider.value = translateProviders[which] },
+            )
+            textInput("微软翻译 Key", "Azure Translator 密钥(Ocp-Apim-Subscription-Key)，仅「微软翻译」服务使用", Settings.translateMsKey)
+            textInput("微软区域(可选)", "Azure 区域标识，如 eastasia；中国区 Key 必填", Settings.translateMsRegion)
             langSelector("查看语言", "把对方消息翻译成的目标语言", Settings.translateViewLang)
             switch("对方消息原地替换", "翻译对方消息时直接用译文替换原文；关闭(默认)则保留原文，在其下方用分隔线显示译文", Settings.translateReplaceInPlace)
             switch("显示“翻译全部”开关", "在好友/群聊设置页显示“翻译全部消息”开关，可逐会话开启：开启后该会话内所有可见文字消息自动翻译成查看语言(重进设置页生效)", Settings.translateShowAllSwitch)
