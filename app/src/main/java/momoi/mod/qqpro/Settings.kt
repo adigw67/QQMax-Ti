@@ -274,8 +274,6 @@ object Settings {
     val bubbleCornerRadius = FloatPref("bubbleCornerRadius", 10f)
     // 聊天背景（实验性）：每群独立背景图 + 全局背景。总开关，关闭后聊天页用默认背景。
     val chatBgEnabled = BooleanPref("chatBgEnabled", false)
-    // 其他界面背景（实验性）：主界面/联系人/动态/我的 等非聊天页面显示背景图（独立于聊天背景）。
-    val pagesBgEnabled = BooleanPref("pagesBgEnabled", false)
     // 背景半透明（独立开关）：关闭时背景图不透明显示；开启时按 chatBgAlpha 半透明。
     val chatBgTranslucent = BooleanPref("chatBgTranslucent", true)
     // 背景图自身半透明程度（0.3~1.0）：数值越小越透，露出下方 M3 surface。
