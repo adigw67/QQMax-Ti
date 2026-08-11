@@ -196,13 +196,13 @@ class BiliDetailActivity : Activity() {
                 setTextColor(M3.onSurface)
                 sp(this, 11.5f)
                 gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(0, WRAP, 1f))
+            }, LinearLayout.LayoutParams(FILL, WRAP))
             cell.addView(TextView(this).apply {
                 text = label
                 setTextColor(M3.onSurfaceVariant)
                 sp(this, 9.5f)
                 gravity = Gravity.CENTER
-            }, LinearLayout.LayoutParams(0, WRAP, 1f))
+            }, LinearLayout.LayoutParams(FILL, WRAP))
             row.addView(cell, LinearLayout.LayoutParams(0, WRAP, 1f))
             if (index < items.size - 1) {
                 row.addView(TextView(this).apply {

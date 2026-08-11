@@ -139,6 +139,11 @@ object BiliCard {
     /** 从消息元素里提取 bilibili 链接（小程序分享：struct xmlContent / ark bytesData）。 */
     fun extractFromRecord(msg: MsgRecordEx): BiliRef? {
         runCatching { msg.elements }.getOrNull()?.forEach { el ->
+            // 全量 toString()：覆盖所有元素类型的所有字段（链接可能藏在任意字段里）。
+            runCatching { el.toString() }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+                extract(urldecode(it))?.let { r -> return r }
+            }
             runCatching { el.structMsgElement?.xmlContent }.getOrNull()?.let {
                 extract(it)?.let { r -> return r }
                 extract(urldecode(it))?.let { r -> return r }
@@ -155,6 +160,25 @@ object BiliCard {
             }
             runCatching { el.textElement?.content }.getOrNull()?.let {
                 extract(it)?.let { r -> return r }
+            }
+            // 调试：元素里含 bili/b23 提示但没提取出来时，打印实际内容便于定位格式。
+            val all = runCatching { el.toString() }.getOrNull().orEmpty()
+            if (all.contains("bili", true) || all.contains("b23", true)) {
+                Utils.log("BiliCard: 元素含bili提示但未提取: ${all.take(300)}")
+            }
+        }
+        return null
+    }
+
+    /** 兜底：从已渲染的小程序卡片视图里收集所有 TextView 文本再匹配一次。 */
+    fun extractFromViews(root: View?): BiliRef? {
+        if (root == null) return null
+        if (root is TextView) {
+            extract(root.text)?.let { return it }
+        }
+        if (root is android.view.ViewGroup) {
+            for (i in 0 until root.childCount) {
+                extractFromViews(root.getChildAt(i))?.let { return it }
             }
         }
         return null

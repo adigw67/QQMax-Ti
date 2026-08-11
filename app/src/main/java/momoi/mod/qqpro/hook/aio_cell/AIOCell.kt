@@ -485,7 +485,7 @@ object AIOCell {
             val biliRef = BiliCard.refOf(
                 widget.getContentWidget<View>() as? TextView,
                 item.d as? MsgRecordEx,
-            )
+            ) ?: BiliCard.extractFromViews(matchedView)
             if (biliRef != null) {
                 matchedView?.visibility = View.GONE
                 BiliCard.bind(widget, biliRef)
