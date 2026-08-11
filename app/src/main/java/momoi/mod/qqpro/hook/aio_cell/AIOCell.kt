@@ -480,15 +480,20 @@ object AIOCell {
                 recolorTextViews(runCatching { widget.contentWidget }.getOrNull(), M3.onSurfaceTip)
             }
             BubbleCorner.apply(widget)
-            // Same guard as linkify: don't run link preview off a special message's
-            // hidden contentWidget text (e.g. a file extension matched as a URL).
-            if (matched == null || matched.appendMode) {
-                // B站视频卡片优先：识别到 bilibili 链接时隐藏普通链接预览。
-                if (BiliCard.bind(widget)) LinkPreview.hide(widget)
-                else LinkPreview.bind(widget)
-            } else {
+            // B站视频卡片（链接 + 小程序分享）：识别到 bilibili 链接时，隐藏原小程序/链接预览，
+            // 只显示视频卡片；否则按原有逻辑走链接预览。
+            val biliRef = BiliCard.refOf(
+                widget.getContentWidget<View>() as? TextView,
+                item.d as? MsgRecordEx,
+            )
+            if (biliRef != null) {
+                matchedView?.visibility = View.GONE
+                BiliCard.bind(widget, biliRef)
                 LinkPreview.hide(widget)
+            } else {
                 BiliCard.hide(widget)
+                if (matched == null || matched.appendMode) LinkPreview.bind(widget)
+                else LinkPreview.hide(widget)
             }
             PlusOneButton.bind(widget, item)
             // Translate this text bubble (manual 翻译 entry or per-chat 翻译全部消息). No-op for

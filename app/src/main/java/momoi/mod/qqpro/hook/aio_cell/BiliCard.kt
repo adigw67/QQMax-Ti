@@ -86,12 +86,14 @@ object BiliCard {
         val pubdate: Long,
         val duration: Int,
         val owner: String,
+        val tname: String,
         val view: Long,
         val danmaku: Long,
         val reply: Long,
         val favorite: Long,
         val coin: Long,
         val like: Long,
+        val share: Long,
         val tags: List<String>,
     ) {
         fun webUrl(): String = "https://www.bilibili.com/video/$bvid"
@@ -113,30 +115,57 @@ object BiliCard {
         else -> n.toString()
     }
 
-    /** 绑定消息单元格；返回 true 表示本卡持有该单元格（应隐藏普通链接预览）。 */
-    fun bind(widget: AIOCellGroupWidget): Boolean {
+    /** 小程序/链接检测：先看气泡文本，再看消息元素（struct XML / ark JSON / text）。 */
+    fun refOf(content: TextView?, msg: MsgRecordEx?): BiliRef? {
+        if (!Settings.biliCard.value) return null
+        extract(content?.text)?.let { return it }
+        return msg?.let { extractFromRecord(it) }
+    }
+
+    /** 从消息元素里提取 bilibili 链接（小程序分享：struct xmlContent / ark bytesData）。 */
+    fun extractFromRecord(msg: MsgRecordEx): BiliRef? {
+        runCatching { msg.elements }.getOrNull()?.forEach { el ->
+            runCatching { el.structMsgElement?.xmlContent }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+            }
+            runCatching { el.arkElement?.bytesData }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+            }
+            runCatching { el.arkElement?.linkInfo?.desc }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+            }
+            runCatching { el.arkElement?.linkInfo?.title }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+            }
+            runCatching { el.textElement?.content }.getOrNull()?.let {
+                extract(it)?.let { r -> return r }
+            }
+        }
+        return null
+    }
+
+    /** 绑定消息单元格并显示卡片（调用方已判定 [ref] 非空）。 */
+    fun bind(widget: AIOCellGroupWidget, ref: BiliRef) {
         val content = widget.getContentWidget<View>() as? TextView
-        val ref = if (Settings.biliCard.value && content != null) extract(content.text) else null
-        if (ref == null) {
+        if (content == null) {
             cards[widget]?.root?.visibility = View.GONE
-            return false
+            return
         }
         val card = cards.getOrPut(widget) {
-            val c = Card(content!!.context)
+            val c = Card(content.context)
             val warp = content.warpOnce()
             warp.addView(c.root, LinearLayout.LayoutParams(FILL, WRAP).apply {
                 topMargin = (4 * content.context.resources.displayMetrics.density).toInt()
             })
             c
         }
-        (content!!.layoutParams as? LinearLayout.LayoutParams)?.also {
+        (content.layoutParams as? LinearLayout.LayoutParams)?.also {
             it.width = WRAP
             it.height = WRAP
             it.weight = 0f
         } ?: run { content.layoutParams = LinearLayout.LayoutParams(WRAP, WRAP) }
         card.root.visibility = View.VISIBLE
         card.show(ref)
-        return true
     }
 
     fun hide(widget: AIOCellGroupWidget) {
@@ -204,12 +233,14 @@ object BiliCard {
             pubdate = d.optLong("pubdate", 0),
             duration = d.optInt("duration", 0),
             owner = d.optJSONObject("owner")?.optString("name", "") ?: "",
+            tname = d.optString("tname", ""),
             view = stat.optLong("view", 0),
             danmaku = stat.optLong("danmaku", 0),
             reply = stat.optLong("reply", 0),
             favorite = stat.optLong("favorite", 0),
             coin = stat.optLong("coin", 0),
             like = stat.optLong("like", 0),
+            share = stat.optLong("share", 0),
             tags = emptyList(),
         )
     } catch (e: Exception) {
@@ -266,7 +297,9 @@ object BiliCard {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         if (biliClient.resolveActivity(ctx.packageManager) != null) {
-            runCatching { ctx.startActivity(biliClient) }.onFailure { Utils.log("BiliCard: client open failed: $it") }
+            Utils.log("BiliCard: 打开哔哩终端 ${info.webUrl()}")
+            runCatching { ctx.startActivity(biliClient) }
+                .onFailure { Utils.log("BiliCard: client open failed: $it") }
             return
         }
         val official = Intent(Intent.ACTION_VIEW, Uri.parse("bilibili://video/${info.bvid}")).apply {
@@ -274,9 +307,11 @@ object BiliCard {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         if (official.resolveActivity(ctx.packageManager) != null) {
+            Utils.log("BiliCard: 打开官方客户端 ${info.bvid}")
             runCatching { ctx.startActivity(official) }.onFailure { Utils.log("BiliCard: official open failed: $it") }
             return
         }
+        Utils.log("BiliCard: 无客户端，走浏览器 ${info.webUrl()}")
         Utils.openUrl(info.webUrl())
     }
 

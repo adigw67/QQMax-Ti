@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.TypedValue
@@ -129,18 +128,28 @@ class BiliDetailActivity : Activity() {
                 if (v.owner.isNotBlank()) append(v.owner).append(" · ")
                 append(v.durationText()).append(" · ")
                 append(v.pubdateText())
+                if (v.tname.isNotBlank()) append(" · ").append(v.tname)
             }
             setTextColor(M3.onSurfaceVariant)
             sp(this, 10.5f)
         }, LinearLayout.LayoutParams(FILL, WRAP))
 
-        // 数据区：两行三列（播放/弹幕/点赞 / 投币/收藏/评论）。
+        // 数据区：两行三列（播放/弹幕/点赞 / 投币/收藏/评论），无底色灰框。
         body.addView(statsRow(listOf("播放" to v.view, "弹幕" to v.danmaku, "点赞" to v.like)), LinearLayout.LayoutParams(FILL, WRAP).apply {
-            topMargin = dp2(8)
+            topMargin = dp2(10)
         })
         body.addView(statsRow(listOf("投币" to v.coin, "收藏" to v.favorite, "评论" to v.reply)), LinearLayout.LayoutParams(FILL, WRAP).apply {
-            topMargin = dp2(6)
+            topMargin = dp2(4)
         })
+        if (v.share > 0) {
+            body.addView(TextView(ctx).apply {
+                text = "分享 ${BiliCard.fmt(v.share)}"
+                setTextColor(M3.onSurfaceVariant)
+                sp(this, 10f)
+                gravity = Gravity.CENTER
+                setPadding(0, dp2(4), 0, dp2(2))
+            }, LinearLayout.LayoutParams(FILL, WRAP))
+        }
 
         if (v.tags.isNotEmpty()) {
             body.addView(TextView(ctx).apply {
@@ -176,13 +185,8 @@ class BiliDetailActivity : Activity() {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
-            background = GradientDrawable().apply {
-                setColor(0x14_000000)
-                cornerRadius = dp(6).toFloat()
-            }
-            setPadding(dp(6), dp(6), dp(6), dp(6))
         }
-        items.forEach { (label, value) ->
+        items.forEachIndexed { index, (label, value) ->
             val cell = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER
@@ -200,6 +204,14 @@ class BiliDetailActivity : Activity() {
                 gravity = Gravity.CENTER
             }, LinearLayout.LayoutParams(0, WRAP, 1f))
             row.addView(cell, LinearLayout.LayoutParams(0, WRAP, 1f))
+            if (index < items.size - 1) {
+                row.addView(TextView(this).apply {
+                    text = "·"
+                    setTextColor(M3.onSurfaceVariant)
+                    sp(this, 10f)
+                    gravity = Gravity.CENTER
+                }, LinearLayout.LayoutParams(WRAP, WRAP))
+            }
         }
         return row
     }
@@ -209,7 +221,11 @@ class BiliDetailActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
         }
         row.addView(button("打开客户端") {
-            val v = info ?: return@button
+            val v = info
+            if (v == null) {
+                Utils.toast(this@BiliDetailActivity, "视频信息未加载，请稍后重试")
+                return@button
+            }
             BiliCard.openClient(this@BiliDetailActivity, v)
         }, LinearLayout.LayoutParams(0, WRAP, 1f).apply { rightMargin = dp(4) })
         row.addView(button("复制链接") {
