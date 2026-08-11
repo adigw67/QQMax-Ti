@@ -14,6 +14,7 @@ import com.tencent.qqnt.watch.contact.ui.item.ContactBaseItem
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.findNavControllerFromTree
+import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
 
 /**
@@ -70,6 +71,13 @@ class ContactListFragmentHook : ContactListFragment() {
 
     override fun Y(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = super.Y(inflater, container, savedInstanceState)
+        // 其他界面背景：挂到背景层，并让列表根透明露出背景图。
+        if (ChatBackground.pagesEnabled()) {
+            runCatching {
+                ChatBackground.applyToPages(this)
+                v?.setBackgroundColor(0)
+            }.onFailure { Utils.log("ContactListFragmentHook pages bg: $it") }
+        }
         // Append the full online-status description to friend rows (independent of contactSections).
         if (Settings.onlineStatusContactList.value && v is RecyclerView) {
             runCatching {
