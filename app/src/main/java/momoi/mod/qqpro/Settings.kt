@@ -458,6 +458,10 @@ object Settings {
     val translateMsKey = StringPref("translateMsKey", "")
     // 微软翻译区域（可选；中国区 Key 必填），如 eastasia。
     val translateMsRegion = StringPref("translateMsRegion", "")
+    // 百度翻译开放平台 APP ID（fanyi-api.baidu.com）。
+    val translateBaiduAppId = StringPref("translateBaiduAppId", "")
+    // 百度翻译开放平台密钥（用于 md5 签名）。
+    val translateBaiduKey = StringPref("translateBaiduKey", "")
 
     // ===== 聊天总结 (by AILIFE) =====
     // The long-press "总结" entry's visibility now lives in 菜单自定义 ([longPressMenuOrder]).
@@ -572,7 +576,7 @@ object Settings {
         picMaxHeightRatio, longScreenshot, bubbleCornerRadius, bubbleColorSelf, bubbleColorOther, textColor, textColorSelf, linkColor, contactSections, materialContactsList, materialChatList, materialQZoneBar, qzoneBarSpread, qzoneInlineVideo, qzoneMiniAppCard, materializeQzone, qzoneTruncatePost, qzoneTruncateImages,
         profileNameMultiline, useRichProfile, useM3Settings, materializeLogin,
         translateViewLang, translateSendLang, translateShowAllSwitch, translateOwnMessages, translateReplaceInPlace, translateSendButton,
-        translateProvider, translateMsKey, translateMsRegion,
+        translateProvider, translateMsKey, translateMsRegion, translateBaiduAppId, translateBaiduKey,
         multiSelectTimeOrder, multiSelectCopySender,
         screenshotTitlebar, screenshotInputBar, screenshotSelfAsOther, screenshotShowIdentity, screenshotWatermark,
         callNotifyFix, callFullScreenIntent, callBluetoothRoute, callCameralessVideo, materializeCall,

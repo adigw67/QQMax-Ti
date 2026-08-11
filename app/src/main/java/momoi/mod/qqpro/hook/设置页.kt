@@ -593,14 +593,16 @@ class 设置页 : SettingsActivity() {
                 { M3.parseColorOrNull(Settings.linkColor.value) ?: M3.primary })
         },
         SettingsCategory("翻译", "消息翻译与发送翻译") {
-            val translateProviders = listOf("custom", "ms", "google")
-            val translateProviderNames = listOf("自定义AI", "微软翻译", "谷歌(海外)")
+            val translateProviders = listOf("custom", "baidu", "mymemory", "ms", "google")
+            val translateProviderNames = listOf("自定义AI", "百度翻译", "MyMemory(免费)", "微软翻译", "谷歌(海外)")
             selector(
-                "翻译服务", "自定义AI=复用「聊天总结」的 API Key/接口/模型（国内推荐 DeepSeek，默认）；微软翻译=Azure 需填下方 Key；谷歌=海外可用",
+                "翻译服务", "自定义AI=复用「聊天总结」的 API Key（默认，国内推荐）；百度翻译=需下方 APP ID+密钥；MyMemory=免费免 Key；微软翻译=Azure 需 Key；谷歌=海外",
                 translateProviderNames,
                 current = { translateProviders.indexOf(Settings.translateProvider.value).coerceAtLeast(0) },
                 onPick = { which -> Settings.translateProvider.value = translateProviders[which] },
             )
+            textInput("百度翻译 APP ID", "百度翻译开放平台的 APP ID，仅「百度翻译」服务使用", Settings.translateBaiduAppId)
+            textInput("百度翻译密钥", "百度翻译开放平台的密钥（用于签名），仅「百度翻译」服务使用", Settings.translateBaiduKey)
             textInput("微软翻译 Key", "Azure Translator 密钥(Ocp-Apim-Subscription-Key)，仅「微软翻译」服务使用", Settings.translateMsKey)
             textInput("微软区域(可选)", "Azure 区域标识，如 eastasia；中国区 Key 必填", Settings.translateMsRegion)
             langSelector("查看语言", "把对方消息翻译成的目标语言", Settings.translateViewLang)

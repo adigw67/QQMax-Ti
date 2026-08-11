@@ -17,6 +17,8 @@ import kotlin.concurrent.thread
  *  - custom（默认）：自定义 OpenAI 兼容接口，复用「聊天总结」的 API Key / 接口地址 / 模型
  *    （国内推荐 DeepSeek）。未填 Key 时回退谷歌。
  *  - ms：微软翻译（Azure Translator v3，需 Ocp-Apim-Subscription-Key，区域可选）。
+ *  - baidu：百度翻译开放平台（需 APP ID + 密钥）。
+ *  - mymemory：MyMemory 免费接口（无需 Key，每日有限额）。
  *  - google：谷歌免费接口（海外可用，大陆直连不通）。
  *
  * [translate] runs on a background thread (Http.get spawns one) and calls back there; callers that
@@ -45,6 +47,8 @@ object Translator {
 
     private const val GOOGLE = "https://translate.googleapis.com/translate_a/single"
     private const val MS = "https://api.cognitive.microsofttranslator.com/translate"
+    private const val BAIDU = "https://fanyi-api.baidu.com/api/trans/vip/translate"
+    private const val MYMEMORY = "https://api.mymemory.translated.net/get"
     private const val BROWSER_UA =
         "Mozilla/5.0 (Linux; Android 9; Watch) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
 
@@ -57,22 +61,95 @@ object Translator {
         if (trimmed.isEmpty() || target.isBlank()) { callback(null); return }
         thread {
             val result = when (Settings.translateProvider.value) {
+                "baidu" -> if (Settings.translateBaiduAppId.value.isNotBlank() &&
+                    Settings.translateBaiduKey.value.isNotBlank()
+                ) {
+                    baiduTranslate(trimmed, target)
+                } else {
+                    Utils.log("Translator: 百度翻译未填 APP ID/密钥，回退免费接口")
+                    freeTranslate(trimmed, target)
+                }
                 "ms" -> if (Settings.translateMsKey.value.isNotBlank()) {
                     microsoftTranslate(trimmed, target)
                 } else {
-                    Utils.log("Translator: 微软翻译未填 Key，回退谷歌")
-                    googleTranslate(trimmed, target)
+                    Utils.log("Translator: 微软翻译未填 Key，回退免费接口")
+                    freeTranslate(trimmed, target)
                 }
                 "custom" -> if (Settings.summarizeApiKey.value.isNotBlank()) {
                     customTranslate(trimmed, target)
                 } else {
-                    Utils.log("Translator: 自定义AI未填 Key，回退谷歌")
-                    googleTranslate(trimmed, target)
+                    Utils.log("Translator: 自定义AI未填 Key，回退免费接口")
+                    freeTranslate(trimmed, target)
                 }
+                "mymemory" -> mymemoryTranslate(trimmed, target)
                 else -> googleTranslate(trimmed, target)
             }
             callback(result)
         }
+    }
+
+    /** 免 Key 回退链：MyMemory（无需 Key）→ 谷歌（海外）。 */
+    private fun freeTranslate(text: String, target: String): String? =
+        mymemoryTranslate(text, target) ?: googleTranslate(text, target)
+
+    /** MyMemory 免费接口（无需 Key，自动检测源语言，每日 5000 字符额度）。 */
+    private fun mymemoryTranslate(text: String, target: String): String? {
+        val to = if (target == "zh") "zh-CN" else target
+        val q = runCatching { URLEncoder.encode(text, "UTF-8") }.getOrNull() ?: return null
+        val raw = get("$MYMEMORY?q=$q&langpair=Autodetect%7C$to") ?: return null
+        return runCatching {
+            val root = JSONObject(raw)
+            if (root.optInt("responseStatus", 0) != 200) return@runCatching null
+            root.optJSONObject("responseData")?.optString("translatedText", "")
+                ?.trim()?.takeIf { it.isNotBlank() }
+        }.onFailure { Utils.log("Translator: mymemory parse failed: $it") }.getOrNull()
+    }
+
+    /** 百度翻译开放平台：GET + md5(appid+q+salt+密钥) 签名。 */
+    private fun baiduTranslate(text: String, target: String): String? {
+        val appid = Settings.translateBaiduAppId.value.trim()
+        val key = Settings.translateBaiduKey.value.trim()
+        val to = baiduCode(target)
+        val salt = System.currentTimeMillis().toString()
+        val sign = md5("$appid$text$salt$key") ?: return null
+        val params = buildString {
+            append("q=").append(URLEncoder.encode(text, "UTF-8"))
+            append("&from=auto&to=").append(to)
+            append("&appid=").append(appid)
+            append("&salt=").append(salt)
+            append("&sign=").append(sign)
+        }
+        val raw = get("$BAIDU?$params") ?: return null
+        val err = runCatching { JSONObject(raw).optString("error_code", "") }.getOrDefault("")
+        if (err.isNotEmpty()) {
+            Utils.log("Translator: baidu error $err: ${JSONObject(raw).optString("error_msg", "")}")
+            return null
+        }
+        return runCatching {
+            val arr = JSONObject(raw).optJSONArray("trans_result") ?: return@runCatching null
+            val sb = StringBuilder()
+            for (i in 0 until arr.length()) {
+                sb.append(arr.optJSONObject(i)?.optString("dst", ""))
+            }
+            sb.toString().trim().takeIf { it.isNotBlank() }
+        }.onFailure { Utils.log("Translator: baidu parse failed: $it") }.getOrNull()
+    }
+
+    private fun baiduCode(code: String): String = when (code) {
+        "ja" -> "jp"
+        "ko" -> "kor"
+        "fr" -> "fra"
+        "es" -> "spa"
+        "ar" -> "ara"
+        else -> code
+    }
+
+    private fun md5(s: String): String? = try {
+        val d = java.security.MessageDigest.getInstance("MD5").digest(s.toByteArray(Charsets.UTF_8))
+        d.joinToString("") { "%02x".format(it) }
+    } catch (e: Exception) {
+        Utils.log("Translator: md5 failed: ${e.message}")
+        null
     }
 
     /** 谷歌免费接口（无需 Key）：GET translate_a/single?client=gtx … */
