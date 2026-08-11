@@ -38,14 +38,19 @@ object ChatBackground {
 
     /** 该会话是否有背景可显示：会话独立背景优先，否则全局背景。peerUid 为 null = 只看全局。 */
     fun isSet(peerUid: String?): Boolean =
-        peerFile(peerUid).exists() || (peerUid != null && globalFile.exists())
+        peerFile(peerUid?.takeIf { it.isNotBlank() }).exists() || globalFile.exists()
 
     fun peerSet(peerUid: String?): Boolean = peerFile(peerUid).exists()
     fun globalSet(): Boolean = globalFile.exists()
 
-    /** 保存裁剪好的位图（JPEG）。[peerUid] 为 null/空 = 全局背景。 */
+    /**
+     * 保存裁剪好的位图（JPEG）。[peerUid] 为 null/空 = 全局背景。
+     *
+     * 全局背景必须写到 [globalFile]（files/chat_bg.img）——聊天页的显示回退读的就是这个文件；
+     * 旧版本误存到 chat_bg/bg_<"global".hash>.img 的文件不会被任何页面读取，不能作为全局背景。
+     */
     fun saveCropped(bitmap: Bitmap, peerUid: String?): Boolean = try {
-        val out = peerFile(peerUid?.takeIf { it.isNotBlank() })
+        val out = if (peerUid.isNullOrBlank()) globalFile else peerFile(peerUid)
         FileOutputStream(out).use { fos -> bitmap.compress(Bitmap.CompressFormat.JPEG, 88, fos) }
         Utils.log("ChatBackground saved peer=${peerUid ?: "global"} -> ${out.absolutePath} (${out.length()} bytes)")
         true
@@ -55,8 +60,15 @@ object ChatBackground {
     }
 
     fun clear(peerUid: String?) {
-        val f = peerFile(peerUid?.takeIf { it.isNotBlank() })
-        if (f.exists()) f.delete()
+        if (peerUid.isNullOrBlank()) {
+            // 全局背景：删除实际显示的 files/chat_bg.img，并顺带清理旧版本误存到 chat_bg/bg_<global>.img 的文件。
+            if (globalFile.exists()) globalFile.delete()
+            val legacy = peerFile(null)
+            if (legacy.exists()) legacy.delete()
+        } else {
+            val f = peerFile(peerUid)
+            if (f.exists()) f.delete()
+        }
     }
 
     fun clearAll() {
@@ -68,7 +80,7 @@ object ChatBackground {
     private fun pickFile(peerUid: String?): File? {
         val peer = peerFile(peerUid?.takeIf { it.isNotBlank() })
         if (peer.exists()) return peer
-        return if (peerUid != null && globalFile.exists()) globalFile else null
+        return if (globalFile.exists()) globalFile else null
     }
 
     /** 解码 + 变暗遮罩；无背景返回 null。 */
