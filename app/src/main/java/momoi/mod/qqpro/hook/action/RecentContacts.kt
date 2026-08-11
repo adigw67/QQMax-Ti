@@ -18,7 +18,6 @@ import momoi.mod.qqpro.hook.FontPack
 import momoi.mod.qqpro.lib.material.M3
 import momoi.mod.qqpro.lib.material.MaterialSymbol
 import momoi.mod.qqpro.lib.material.MaterialSymbols
-import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
 
 /**
@@ -64,12 +63,7 @@ fun fontWrapChatRow(holder: WatchRecentContactHolder) {
 class ChatListMaterial : ChatListFragment() {
     override fun Y(p0: LayoutInflater, p1: ViewGroup?, p2: Bundle?): View {
         val root = super.Y(p0, p1, p2)!!
-        if (ChatBackground.pagesEnabled()) {
-            // 其他界面背景：挂到背景层，并把本页根背景清成透明，露出背景图。
-            ChatBackground.applyToPages(this)
-            root.setBackgroundColor(0)
-            Utils.log("ChatListMaterial: pages background applied")
-        } else if (Settings.materialChatList.value) {
+        if (Settings.materialChatList.value) {
             root.setBackgroundColor(M3.surface)
             Utils.log("ChatListMaterial: list background materialized")
         }

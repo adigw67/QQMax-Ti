@@ -14,7 +14,6 @@ import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
 import android.net.Uri
 import android.widget.ImageView
-import androidx.fragment.app.Fragment
 import momoi.mod.qqpro.Settings
 import java.io.File
 import java.io.FileOutputStream
@@ -37,16 +36,12 @@ object ChatBackground {
 
     fun enabled(): Boolean = Settings.chatBgEnabled.value
 
-    /** 其他界面（主界面/联系人/动态/我的）背景总开关：开启且已设置图片。 */
-    fun pagesEnabled(): Boolean = Settings.pagesBgEnabled.value && peerFile("pages").exists()
-
     /** 该会话是否有背景可显示：会话独立背景优先，否则全局背景。peerUid 为 null = 只看全局。 */
     fun isSet(peerUid: String?): Boolean =
         peerFile(peerUid).exists() || (peerUid != null && globalFile.exists())
 
     fun peerSet(peerUid: String?): Boolean = peerFile(peerUid).exists()
     fun globalSet(): Boolean = globalFile.exists()
-    fun pagesSet(): Boolean = peerFile("pages").exists()
 
     /** 保存裁剪好的位图（JPEG）。[peerUid] 为 null/空 = 全局背景。 */
     fun saveCropped(bitmap: Bitmap, peerUid: String?): Boolean = try {
@@ -69,11 +64,6 @@ object ChatBackground {
         if (globalFile.exists()) globalFile.delete()
     }
 
-    fun clearPages() {
-        val f = peerFile("pages")
-        if (f.exists()) f.delete()
-    }
-
     /** 该会话要显示的背景文件（独立优先，其次全局），无则 null。 */
     private fun pickFile(peerUid: String?): File? {
         val peer = peerFile(peerUid?.takeIf { it.isNotBlank() })
@@ -85,17 +75,6 @@ object ChatBackground {
     fun loadDrawable(peerUid: String?): Drawable? {
         if (!enabled()) return null
         val f = pickFile(peerUid) ?: return null
-        return loadDrawableFrom(f)
-    }
-
-    /** 其他界面背景 drawable（透明度/变暗沿用聊天背景设置）。 */
-    fun loadPagesDrawable(): Drawable? {
-        if (!pagesEnabled()) return null
-        return loadDrawableFrom(peerFile("pages"))
-    }
-
-    /** 解码 + 变暗遮罩（聊天背景与页面背景共用）。 */
-    private fun loadDrawableFrom(f: File): Drawable? {
         return try {
             val metrics = Utils.application.resources.displayMetrics
             val reqW = metrics.widthPixels
@@ -135,23 +114,6 @@ object ChatBackground {
         val drawable = loadDrawable(peerUid) ?: return
         bgView.scaleType = ImageView.ScaleType.CENTER_CROP
         bgView.setImageDrawable(drawable)
-    }
-
-    /** 应用到页面背景 ImageView（CENTER_CROP 铺满）。 */
-    fun applyToPages(bgView: ImageView?) {
-        if (bgView == null) return
-        val drawable = loadPagesDrawable() ?: return
-        bgView.scaleType = ImageView.ScaleType.CENTER_CROP
-        bgView.setImageDrawable(drawable)
-    }
-
-    /** 对主界面页面（继承 WatchFragment 的 MainInnerFragment）应用其他界面背景。 */
-    fun applyToPages(fragment: Fragment?) {
-        if (fragment == null || !pagesEnabled()) return
-        runCatching {
-            val d = fragment.javaClass.getField("d")
-            (d.get(fragment) as? ImageView)?.let { applyToPages(it) }
-        }.onFailure { Utils.log("ChatBackground.applyToPages failed: $it") }
     }
 
     /** 从位图提取主色（简单莫奈式）：缩到 32x32 后取平均色。 */

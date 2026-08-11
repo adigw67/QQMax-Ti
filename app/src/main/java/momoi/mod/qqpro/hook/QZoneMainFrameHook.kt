@@ -9,7 +9,6 @@ import com.tencent.watch.qzone_impl.frame.QZoneMainFrame
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.qzone.QzoneFeedM3
-import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.Utils
 
 /**
@@ -30,11 +29,6 @@ class QZoneMainFrameHook : QZoneMainFrame() {
         val orig = super.Y(inflater, container, savedInstanceState)
         // Publish ourselves so a repeat-tap on the qzone nav cell can open the 通知 screen.
         MainNav.qzoneFragment = java.lang.ref.WeakReference<Any>(this)
-        // 其他界面背景：挂到背景层（列表透明由 QzoneFeedM3.install 处理）。
-        if (ChatBackground.pagesEnabled()) {
-            runCatching { ChatBackground.applyToPages(this) }
-                .onFailure { Utils.log("QZoneMainFrameHook pages bg: $it") }
-        }
         if (Settings.materializeQzone.value) {
             runCatching { QzoneFeedM3.installMain(this) }
                 .onFailure { Utils.log("QZoneMainFrameHook install: $it") }
