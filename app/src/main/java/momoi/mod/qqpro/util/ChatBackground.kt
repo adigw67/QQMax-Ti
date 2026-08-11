@@ -89,8 +89,10 @@ object ChatBackground {
             }
             val bitmap = BitmapFactory.decodeFile(f.absolutePath, opts) ?: return null
             val image = BitmapDrawable(Utils.application.resources, bitmap)
-            // 背景图自身半透明（MD3e 风格）：数值越小越透，露出下方 surface。
-            image.alpha = (Settings.chatBgAlpha.value.coerceIn(0.3f, 1f) * 255).toInt()
+            // 背景图自身半透明（独立开关）：关闭则完全不透明；开启时数值越小越透，露出下方 surface。
+            image.alpha = if (Settings.chatBgTranslucent.value) {
+                (Settings.chatBgAlpha.value.coerceIn(0.3f, 1f) * 255).toInt()
+            } else 255
 
             val darken = Settings.chatBgDarken.value.coerceIn(0f, 0.95f)
             val base: Drawable = if (darken <= 0f) image
@@ -98,7 +100,7 @@ object ChatBackground {
                 val overlay = ColorDrawable(Color.argb((darken * 255).toInt(), 0, 0, 0))
                 LayerDrawable(arrayOf<Drawable>(image, overlay))
             }
-            // MD3e 圆表适配：按圆屏内切圆裁剪，四角露出 M3 surface，不被方图盖住。
+            // 圆表适配：按圆屏内切圆裁剪，四角露出 M3 surface，不被方图盖住。
             if (Settings.md3eRound.value) CircleClipDrawable(base) else base
         } catch (e: Exception) {
             Utils.log("ChatBackground load failed: ${e.javaClass.simpleName}: ${e.message}")

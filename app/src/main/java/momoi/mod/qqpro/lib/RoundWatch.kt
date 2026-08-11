@@ -13,7 +13,7 @@ import android.widget.FrameLayout
 import momoi.mod.qqpro.Settings
 
 /**
- * MD3e 圆形手表 UI（实验性）：圆屏安全区 + 表盘遮罩。
+ * 圆表 UI（实验性）：圆屏安全区 + 表盘遮罩。
  *  - [addRoundMask]：在页面最上层盖一个「表盘边框」——内切圆之外画成黑色表圈，
  *    内圈加一圈柔和阴影（expressive 深色渐变环），四角内容不再溢出圆屏。
  *  - [roundSafePadding]：给滚动内容加圆屏安全区 padding（顶/底角不被圆边裁切）。

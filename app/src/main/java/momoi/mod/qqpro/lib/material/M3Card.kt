@@ -18,7 +18,7 @@ import momoi.mod.qqpro.lib.vertical
 class M3Card(ctx: Context) : LinearLayout(ctx) {
     init {
         vertical()
-        // MD3 卡片圆角 = 12dp（radiusMd）；开启「MD3e 圆表 UI」时用更大的表达性圆角 28dp。
+        // MD3 卡片圆角 = 12dp（radiusMd）；开启「圆表 UI」时用更大的表达性圆角 28dp。
         background = M3.rounded(
             M3.surfaceContainer,
             if (momoi.mod.qqpro.Settings.md3eRound.value) M3.radiusXl else M3.radiusMd,

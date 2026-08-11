@@ -74,12 +74,11 @@ private fun showChatBgOptions(fragment: SettingFrame) {
         text = "设置背景（选图裁剪）"
         setOnClickListener {
             dialog.dismiss()
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-                type = "image/*"
-                addCategory(Intent.CATEGORY_OPENABLE)
-            }
             runCatching {
-                fragment.startActivityForResult(Intent.createChooser(intent, "选择背景图片"), REQ_CHAT_BG_PICK)
+                fragment.startActivityForResult(
+                    Intent(ctx, ImagePickerActivity::class.java),
+                    REQ_CHAT_BG_PICK,
+                )
             }.onFailure { Utils.log("ChatBgEntry: picker failed: $it") }
         }
     }, LinearLayout.LayoutParams(FILL, WRAP).apply { topMargin = 12.dp })

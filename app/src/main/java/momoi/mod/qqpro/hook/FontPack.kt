@@ -36,8 +36,8 @@ import kotlin.concurrent.thread
  *
  * 下载源（官方服务器）：
  *  - MiSans：小米官方 https://hyperos.mi.com/font-download/MiSans.zip（227MB 全家桶；
- *    这里用 HTTP Range 只拉 zip 里的 MiSans-Regular.ttf / MiSans-Bold.ttf 两个条目，
- *    实际约 11MB，不解压整包）
+ *    这里用 HTTP Range 只拉 zip 里的 MiSans-Regular.ttf / MiSans-Medium.ttf /
+ *    MiSans-Bold.ttf 三个条目，实际约 16MB，不解压整包）
  *  - Unifont：GNU 官方镜像（unifoundry.com / ftp.gnu.org 的 TLS 配置在手表上握手被拒，
  *    清华镜像在手表上同样握手异常；阿里镜像 TLS 可用但要求浏览器 UA，否则 403。
  *    所以主源用阿里（带 UA）+ 清华/官方源兜底，文件与 ftp.gnu.org 字节一致）
@@ -45,6 +45,7 @@ import kotlin.concurrent.thread
 object FontPack {
     private const val MI_ZIP_URL = "https://hyperos.mi.com/font-download/MiSans.zip"
     private const val MI_REGULAR = "MiSans/ttf/MiSans-Regular.ttf"
+    private const val MI_MEDIUM = "MiSans/ttf/MiSans-Medium.ttf"
     private const val MI_BOLD = "MiSans/ttf/MiSans-Bold.ttf"
     private const val UNI_URL =
         "https://mirrors.aliyun.com/gnu/unifont/unifont-17.0.05/unifont-17.0.05.otf"
@@ -59,6 +60,7 @@ object FontPack {
     private var busy = false
 
     private var miTypeface: Typeface? = null
+    private var mediumTypeface: Typeface? = null
     private var boldTypeface: Typeface? = null
     private var uniTypeface: Typeface? = null
     // MiSans 的 BMP 覆盖位图：构建时从官方 MiSans-Regular.ttf 的 cmap 精确生成（8192 字节，
@@ -107,6 +109,7 @@ object FontPack {
 
     private fun dir(): File? = Utils.application.safeCacheDir?.let { File(it, "fonts") }
     fun regularFile(): File? = dir()?.let { File(it, "MiSans-Regular.ttf") }
+    fun mediumFile(): File? = dir()?.let { File(it, "MiSans-Medium.ttf") }
     fun boldFile(): File? = dir()?.let { File(it, "MiSans-Bold.ttf") }
     fun unifontFile(): File? = dir()?.let { File(it, "unifont-17.0.05.otf") }
 
@@ -134,11 +137,13 @@ object FontPack {
     /** 设置页状态文案。 */
     fun statusText(): String {
         val mi = regularFile()?.isFile == true
+        val m = mediumFile()?.isFile == true
         val b = boldFile()?.isFile == true
         val uni = unifontFile()?.isFile == true
         return when {
-            mi && b && uni -> "已下载 MiSans(Regular+Bold) + Unifont；开启开关并重启应用后全部界面生效"
-            mi || b || uni -> "字体包不完整（MiSans=$mi Bold=$b Unifont=$uni），请重新下载"
+            mi && m && b && uni -> "已下载 MiSans(Regular+Medium+Bold) + Unifont；开启开关并重启应用后全部界面生效"
+            mi && b && uni -> "已下载 MiSans(Regular+Bold，缺 Medium) + Unifont；中等字重将回退为常规"
+            mi || m || b || uni -> "字体包不完整（MiSans=$mi Medium=$m Bold=$b Unifont=$uni），请重新下载"
             else -> "未下载（官方源：小米 hyperos.mi.com + GNU 镜像，共约 16MB）"
         }
     }
@@ -151,8 +156,10 @@ object FontPack {
             originalDefault = Typeface.DEFAULT
             originalDefaultBold = Typeface.DEFAULT_BOLD
             val mi = Typeface.createFromFile(regularFile())
+            val medium = mediumFile()?.takeIf { it.isFile }?.let { Typeface.createFromFile(it) }
             val bold = Typeface.createFromFile(boldFile())
             miTypeface = mi
+            mediumTypeface = medium
             boldTypeface = bold
             uniTypeface = Typeface.createFromFile(unifontFile())
             // 自检覆盖表（构建期生成，理应正确；异常时便于从日志定位）
@@ -165,25 +172,37 @@ object FontPack {
                 (f.get(null) as? HashMap<String, Typeface>)?.let { map ->
                     originalFamilies.clear()
                     originalFamilies.putAll(map)
+                    // 基础字重：常规文字映射到用户选择的字重（常规/中等/粗体）。
+                    val base = when (Settings.fontPackWeight.value) {
+                        2 -> bold
+                        1 -> medium ?: mi
+                        else -> mi
+                    }
                     for (k in listOf(
-                        "sans-serif", "sans-serif-medium", "sans-serif-light",
+                        "sans-serif", "sans-serif-light",
                         "sans-serif-thin", "sans-serif-condensed", "sans-serif-condensed-light",
-                    )) if (map.containsKey(k)) map[k] = mi
+                    )) if (map.containsKey(k)) map[k] = base
+                    if (map.containsKey("sans-serif-medium")) map["sans-serif-medium"] = medium ?: base
                     if (map.containsKey("sans-serif-bold")) map["sans-serif-bold"] = bold
                 }
             }
-            setStatic(Typeface::class.java, "DEFAULT", mi)
+            val base = when (Settings.fontPackWeight.value) {
+                2 -> bold
+                1 -> medium ?: mi
+                else -> mi
+            }
+            setStatic(Typeface::class.java, "DEFAULT", base)
             setStatic(Typeface::class.java, "DEFAULT_BOLD", bold)
             runCatching {
                 val f = Typeface::class.java.getDeclaredField("sDefaults")
                 f.isAccessible = true
                 @Suppress("UNCHECKED_CAST")
                 (f.get(null) as? SparseArray<Typeface>)?.let { arr ->
-                    arr.put(0, mi)
+                    arr.put(0, base)
                     arr.put(1, bold)
                 }
             }
-            Utils.log("FontPack: defaults applied (MiSans + Unifont fallback)")
+            Utils.log("FontPack: defaults applied (MiSans weight=${Settings.fontPackWeight.value} + Unifont fallback)")
         }.onFailure { Utils.log("FontPack: applyDefaults failed: $it") }
     }
 
@@ -195,7 +214,13 @@ object FontPack {
     fun applyAll(root: View) {
         if (!installed()) return
         val mi = miTypeface ?: return
+        val medium = mediumTypeface ?: mi
         val bold = boldTypeface ?: mi
+        val base = when (Settings.fontPackWeight.value) {
+            2 -> bold
+            1 -> medium
+            else -> mi
+        }
         if (root is TextView) {
             val text = root.text
             if (text.isNullOrEmpty()) {
@@ -207,10 +232,14 @@ object FontPack {
                 if (first < 0) {
                     val cur = root.typeface
                     val target = when {
-                        cur == null || cur == originalDefault || cur == Typeface.DEFAULT -> mi
+                        cur == null || cur == originalDefault || cur == Typeface.DEFAULT -> base
                         cur == originalDefaultBold || cur == Typeface.DEFAULT_BOLD -> bold
                         else -> originalFamilies.entries.firstOrNull { it.value == cur }?.let {
-                            if (it.key.contains("bold") || it.key.contains("medium")) bold else mi
+                            when {
+                                it.key.contains("bold") -> bold
+                                it.key.contains("medium") -> medium
+                                else -> base
+                            }
                         }
                     }
                     if (target != null && cur != target) root.typeface = target
@@ -329,6 +358,7 @@ object FontPack {
                 val dir = dir() ?: throw IllegalStateException("无缓存目录")
                 dir.mkdirs()
                 val reg = File(dir, "MiSans-Regular.ttf")
+                val medium = File(dir, "MiSans-Medium.ttf")
                 val bold = File(dir, "MiSans-Bold.ttf")
                 val uni = File(dir, "unifont-17.0.05.otf")
 
@@ -337,6 +367,17 @@ object FontPack {
                     val p = if (total > 0) done * 100 / total else 0
                     val t = "下载 MiSans $p%"
                     if (t != last) { last = t; report(onStatus, t) }
+                }
+                report(onStatus, "下载 MiSans Medium…")
+                runCatching {
+                    fetchZipEntry(MI_ZIP_URL, MI_MEDIUM, medium) { done, total ->
+                        val p = if (total > 0) done * 100 / total else 0
+                        val t = "下载 MiSans Medium $p%"
+                        if (t != last) { last = t; report(onStatus, t) }
+                    }
+                }.onFailure {
+                    Utils.log("FontPack: MiSans Medium 下载失败（可选，继续）: $it")
+                    runCatching { medium.delete() }
                 }
                 report(onStatus, "下载 MiSans Bold…")
                 fetchZipEntry(MI_ZIP_URL, MI_BOLD, bold) { done, total ->
@@ -381,6 +422,7 @@ object FontPack {
     fun clear() {
         dir()?.listFiles()?.forEach { runCatching { it.delete() } }
         miTypeface = null
+        mediumTypeface = null
         boldTypeface = null
         uniTypeface = null
         invalidateInstalled()

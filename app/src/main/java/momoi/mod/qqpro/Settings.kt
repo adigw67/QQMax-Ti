@@ -56,6 +56,10 @@ object Settings {
     // 可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用进程内生效，
     // 防止生僻字/扩展区字形缺失。默认关闭；需先下载字体包。
     val fontPackEnabled = BooleanPref("fontPackEnabled", false)
+    // 联网字体包的基础字重：0=常规(Regular) 1=中等(Medium) 2=粗体(Bold)。
+    // 控制 sans-serif 等常规文字映射到 MiSans 的哪个字重；sans-serif-medium 用 Medium、
+    // sans-serif-bold 始终用 Bold。修改后需重启应用完全生效。
+    val fontPackWeight = IntPref("fontPackWeight", 1)
     // All theme-token prefs together (for "restore defaults" — clears every custom M3 color).
     val themeTokens: List<StringPref> get() = listOf(
         themeColor, themeOnPrimary, themePrimaryContainer, themeOnPrimaryContainer,
@@ -276,9 +280,11 @@ object Settings {
     val chatBgEnabled = BooleanPref("chatBgEnabled", false)
     // 自动莫奈取色（实验性）：设置背景后从图片提取主色作为 UI 主题色。
     val chatBgMonet = BooleanPref("chatBgMonet", false)
+    // 背景半透明（独立开关）：关闭时背景图不透明显示；开启时按 chatBgAlpha 半透明。
+    val chatBgTranslucent = BooleanPref("chatBgTranslucent", true)
     // 背景图自身半透明程度（0.3~1.0）：数值越小越透，露出下方 M3 surface。
     val chatBgAlpha = FloatPref("chatBgAlpha", 0.85f)
-    // MD3e 圆表适配（实验性）：背景图按圆屏内切圆裁剪，避免方图盖到圆表四角。
+    // 圆表适配（实验性）：背景图按圆屏内切圆裁剪，避免方图盖到圆表四角。
     val md3eRound = BooleanPref("md3eRound", false)
     // Override chat-bubble fill color, as a hex string (#RRGGBB or #AARRGGBB / with or
     // without the leading #). Blank keeps the original bubble color (sampled per side).

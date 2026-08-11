@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.drawable.ClipDrawable
 import android.graphics.drawable.ColorDrawable
@@ -69,11 +70,13 @@ import momoi.mod.qqpro.lib.width
 import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.util.SettingsBackup
 import momoi.mod.qqpro.util.Utils
+import momoi.mod.qqpro.util.runOnUi
 import momoi.mod.qqpro.watchdog.LogExporter
 import momoi.mod.qqpro.watchdog.DebugActivity
 import momoi.mod.qqpro.watchdog.WatchdogTestActivity
 import moye.wearqq.SettingsActivity
 import kotlin.math.roundToInt
+import kotlin.concurrent.thread
 
 // Routed through the single M3 token source so a retheme flows from lib/material/Material.kt.
 private val ACCENT get() = M3.primary
@@ -81,6 +84,7 @@ private val TRACK_INACTIVE = M3.outline
 private const val REQ_PICK_CHAT_BG = 0x9B01
 private const val REQ_CROP_CHAT_BG = 0x9B02
 private const val REQ_IMPORT_SETTINGS = 0x9B02
+private const val REQ_PICK_MONET_IMG = 0x9B04
 
 // Kept at file scope (not a @Mixin field — those can't have initializers) so
 // onActivityResult can refresh the picker's status text after picking/clearing.
@@ -119,7 +123,7 @@ class 设置页 : SettingsActivity() {
         // 横屏模式：本设置页也跟随开关立即切换方向（onCreate 重建时再确认一次）。
         runCatching { applyOrientationSetting() }
             .onFailure { Utils.log("设置页: 横屏模式应用失败: $it") }
-        // MD3e 圆表 UI（可选）：设置页盖圆表遮罩。
+        // 圆表 UI（可选）：设置页盖圆表遮罩。
         runCatching { RoundWatch.apply(window.decorView) }
             .onFailure { Utils.log("设置页: 圆表遮罩失败: $it") }
 
@@ -311,6 +315,14 @@ class 设置页 : SettingsActivity() {
             switch("跟随系统主题色", "在支持 Material You 动态取色的设备(Android 12 / API 31 及以上)上，未单独设置的颜色自动取用系统壁纸配色(按明暗基调映射)；单独设置的颜色仍优先。旧系统(多数手表)无动态取色则用内置配色。$note", Settings.followSystemTheme)
             section("联网字体包", "可选：从官方源下载 MiSans（优先显示）+ Unifont（缺失字形兜底），仅本应用生效，防止生僻字缺失；下载后重启应用全部界面生效")
             switch("启用联网字体包", "默认关闭；下载字体包后开启，应用内文字优先用 MiSans 渲染", Settings.fontPackEnabled)
+            selector("字体字重", "联网字体包的基础字重：常规/中等/粗体。标题等粗体文字始终用 Bold，sans-serif-medium 用 Medium；修改后重进页面生效，完全生效需重启应用", listOf("常规", "中等", "粗体"),
+                current = { Settings.fontPackWeight.value }) { which ->
+                Settings.fontPackWeight.value = which
+                runCatching {
+                    FontPack.applyDefaults()
+                    FontPack.applyAll(window.decorView)
+                }.onFailure { Utils.log("设置页: 字重切换应用失败: $it") }
+            }
             card { card ->
                 card.vertical()
                 card.content {
@@ -322,7 +334,7 @@ class 设置页 : SettingsActivity() {
                     fontStatusLabel?.text = FontPack.statusText()
                 }
             }
-            actionCard("下载字体包", "只拉取 MiSans Regular/Bold（约 11MB）与 Unifont（约 5MB），仅需一次") {
+            actionCard("下载字体包", "只拉取 MiSans Regular/Medium/Bold（约 16MB）与 Unifont（约 5MB），仅需一次") {
                 FontPack.download { s ->
                     fontStatusLabel?.text = s
                     Utils.toast(this@设置页, s, longDuration = true)
@@ -470,11 +482,15 @@ class 设置页 : SettingsActivity() {
                 { M3.parseColorOrNull(Settings.textColorSelf.value) ?: M3.onColor(BubbleCorner.resolvedBubbleColor(1)) })
             colorPicker("对方文字颜色", "留空为自动对比对方气泡色", Settings.textColor, MaterialColors.ON,
                 { M3.parseColorOrNull(Settings.textColor.value) ?: M3.onColor(BubbleCorner.resolvedBubbleColor(0)) })
-            switch("聊天背景（实验性·MD3e）", "启用聊天页背景图：每个会话可单独设置，另有全局背景兜底；设置时强制裁剪到屏幕比例、可拖动调整位置；背景图半透明叠加", Settings.chatBgEnabled)
-            switch("自动莫奈取色（实验性）", "设置背景后自动从图片提取主色作为 UI 主题色（会清除自定义配色）", Settings.chatBgMonet)
-            switch("MD3e 圆表适配（实验性）", "背景图按圆屏内切圆裁剪，四角露出 M3 surface（圆表安全区）；重进聊天页生效", Settings.md3eRound)
+            switch("聊天背景（实验性）", "启用聊天页背景图：每个会话可单独设置，另有全局背景兜底；设置时强制裁剪到屏幕比例、可拖动调整位置", Settings.chatBgEnabled)
+            switch("自动莫奈取色（实验性）", "设置背景后自动从背景图提取主色作为 UI 主题色（会清除自定义配色）", Settings.chatBgMonet)
+            actionCard("用图片取色（莫奈）", "上传一张图片（不必是聊天背景），取其主色设为 UI 主题色；会清除自定义配色") {
+                pickMonetImage()
+            }
+            switch("背景半透明", "开启后背景图按下方透明度值半透明显示，露出 M3 surface；关闭则背景图不透明。重进聊天页生效", Settings.chatBgTranslucent)
+            switch("圆表适配（实验性）", "背景图按圆屏内切圆裁剪，四角露出 M3 surface（圆表安全区）；重进聊天页生效", Settings.md3eRound)
             chatBackgroundPicker()
-            slider("背景图片透明度", "背景图自身半透明程度（越小越透，露出下方 M3 surface），配合变暗遮罩保证文字可读；重进聊天页生效", Settings.chatBgAlpha, min = 0.3f, max = 1f)
+            slider("背景图片透明度", "背景图自身半透明程度（越小越透，露出下方 M3 surface），需开启「背景半透明」；重进聊天页生效", Settings.chatBgAlpha, min = 0.3f, max = 1f)
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
         },
         SettingsCategory("群聊头像", "群聊中的头像与昵称") {
@@ -1134,21 +1150,64 @@ class 设置页 : SettingsActivity() {
     }
 
     private fun pickChatBackground() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
-            type = "image/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
         try {
-            startActivityForResult(Intent.createChooser(intent, "选择背景图片"), REQ_PICK_CHAT_BG)
+            startActivityForResult(Intent(this, ImagePickerActivity::class.java), REQ_PICK_CHAT_BG)
         } catch (e: Exception) {
             Utils.log("pickChatBackground failed: ${e.javaClass.simpleName}: ${e.message}")
             Utils.toast(this, "无法打开图片选择器")
         }
     }
 
+    /** 莫奈取色：单独上传一张图片（与背景图无关），取其主色设为 UI 主题色。 */
+    private fun pickMonetImage() {
+        try {
+            startActivityForResult(
+                Intent(this, ImagePickerActivity::class.java)
+                    .putExtra(ImagePickerActivity.EXTRA_TITLE, "选择取色图片"),
+                REQ_PICK_MONET_IMG,
+            )
+        } catch (e: Exception) {
+            Utils.log("pickMonetImage failed: ${e.javaClass.simpleName}: ${e.message}")
+            Utils.toast(this, "无法打开图片选择器")
+        }
+    }
+
+    /** 从本地图片路径提取主色并应用为 UI 主题色（后台解码，主线程应用）。 */
+    private fun applyMonetFromPath(path: String) {
+        thread {
+            val color = runCatching {
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                BitmapFactory.decodeFile(path, bounds)
+                var sample = 1
+                while (bounds.outWidth / (sample * 2) >= 2048 || bounds.outHeight / (sample * 2) >= 2048) sample *= 2
+                val bmp = BitmapFactory.decodeFile(path, BitmapFactory.Options().apply { inSampleSize = sample })
+                    ?: return@runCatching null
+                val c = ChatBackground.monetColor(bmp)
+                bmp.recycle()
+                c
+            }.getOrNull()
+            runOnUi {
+                if (color == null) {
+                    Utils.toast(this@设置页, "图片解码失败")
+                } else {
+                    Settings.themeTokens.forEach { it.value = "" }
+                    Settings.themeColor.value = "#%06X".format(color and 0xFFFFFF)
+                    Utils.toast(this@设置页, "已应用图片主色（重进页面生效）")
+                }
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
+            REQ_PICK_MONET_IMG -> {
+                if (resultCode == Activity.RESULT_OK) {
+                    val path = data?.getStringExtra(ImagePickerActivity.EXTRA_PATH)
+                    if (!path.isNullOrBlank()) applyMonetFromPath(path)
+                    else Utils.toast(this, "未选择图片")
+                }
+            }
             REQ_PICK_CHAT_BG -> {
                 val uri = data?.data
                 if (resultCode == Activity.RESULT_OK && uri != null) {

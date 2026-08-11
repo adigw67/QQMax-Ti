@@ -48,6 +48,10 @@
         <activity
             android:name="momoi.mod.qqpro.hook.CropBackgroundActivity"
             android:exported="false" />
+        <!-- 内置图片选择器：背景选图 / 莫奈取色选图（手表无系统图库时的替代）。 -->
+        <activity
+            android:name="momoi.mod.qqpro.hook.ImagePickerActivity"
+            android:exported="false" />
         <activity android:name="com.tencent.qqnt.watch.app.JumpActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

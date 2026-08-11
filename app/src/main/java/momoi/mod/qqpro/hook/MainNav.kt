@@ -214,7 +214,7 @@ object MainNav {
                 clipToPadding = false
                 // The bar otherwise sits over the window's pure black; fill it with the M3 page
                 // surface so it matches the materialized pages (chat list etc.) seamlessly.
-                // MD3e 圆表 UI（可选）：底部导航栏用顶部大圆角的「浮起胶囊」表达风格。
+                // 圆表 UI（可选）：底部导航栏用顶部大圆角的「浮起胶囊」表达风格。
                 background = if (Settings.md3eRound.value) {
                     GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE

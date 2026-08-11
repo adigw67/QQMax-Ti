@@ -48,13 +48,15 @@ javac -cp "$DEXLIB2_JAR:$MULTIDEXLIB2_JAR" -d "$DEV_CLASSES" "$TOOLS_DIR"/*.java
 CP="$DEV_CLASSES:$DEXLIB2_JAR:$MULTIDEXLIB2_JAR:$GUAVA_JAR"
 
 echo "==> [1/6] 生成 targets 清单 (原版 4dex vs 旧版 4dex 差异 + OptimizeService)"
+# BuildFinal2 硬编码读取 /tmp/all_targets.txt，这里直接写到该路径，脚本自洽。
+TARGETS_FILE="/tmp/all_targets.txt"
 java -cp "$CP" CompareDex \
   "$ORIG_DIR/classes.dex" "$ORIG_DIR/classes2.dex" "$ORIG_DIR/classes3.dex" "$ORIG_DIR/classes4.dex" -- \
   "$OLD_DIR/classes.dex" "$OLD_DIR/classes2.dex" "$OLD_DIR/classes3.dex" "$OLD_DIR/classes4.dex" \
-  2>/dev/null | grep '^DIFF' | sed 's/^DIFF //' | sort -u > "$WORK/all_targets.txt"
-grep -q 'Lcom/bytedance/boost_multidex/OptimizeService;' "$WORK/all_targets.txt" || \
-  echo 'Lcom/bytedance/boost_multidex/OptimizeService;' >> "$WORK/all_targets.txt"
-echo "    targets = $(wc -l < "$WORK/all_targets.txt")"
+  2>/dev/null | grep '^DIFF' | sed 's/^DIFF //' | sort -u > "$TARGETS_FILE"
+grep -q 'Lcom/bytedance/boost_multidex/OptimizeService;' "$TARGETS_FILE" || \
+  echo 'Lcom/bytedance/boost_multidex/OptimizeService;' >> "$TARGETS_FILE"
+echo "    targets = $(wc -l < "$TARGETS_FILE")"
 
 echo "==> [2/6] 定位并应用多 dex 补丁 (BoostMultiDex 空壳 + WatchApplication 按进程目录)"
 for f in "$MIXIN_DIR"/classes*.dex; do
