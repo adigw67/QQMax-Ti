@@ -54,6 +54,15 @@ object BiliCard {
         """(?:https?://)?b23\.tv/([A-Za-z0-9]+)""",
         RegexOption.IGNORE_CASE,
     )
+    // 裸 BV 号（小程序 JSON 里常只有 "bvid":"BV1xxxx" 或 pagePath 带 bvid= 参数）。
+    private val RE_BARE_BV = Regex(
+        """(?<![0-9A-Za-z])BV[0-9A-Za-z]{10}(?![0-9A-Za-z])""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val RE_BVID_PARAM = Regex(
+        """bvid=([0-9A-Za-z]{10,})""",
+        RegexOption.IGNORE_CASE,
+    )
 
     /** 一个 bilibili 视频引用：bvid / aid / b23 短链，至少一种。 */
     data class BiliRef(val bvid: String?, val aid: Long?, val short: String?) {
@@ -73,6 +82,11 @@ object BiliCard {
             if (av != null) return BiliRef(null, av, null)
         }
         RE_B23.find(s)?.let { return BiliRef(null, null, it.groupValues[1]) }
+        RE_BVID_PARAM.find(s)?.let { m ->
+            val bv = m.groupValues[1].takeIf { it.startsWith("BV", ignoreCase = true) }
+            if (bv != null) return BiliRef(bv.uppercase(), null, null)
+        }
+        RE_BARE_BV.find(s)?.let { return BiliRef(it.value.uppercase(), null, null) }
         return null
     }
 
@@ -127,9 +141,11 @@ object BiliCard {
         runCatching { msg.elements }.getOrNull()?.forEach { el ->
             runCatching { el.structMsgElement?.xmlContent }.getOrNull()?.let {
                 extract(it)?.let { r -> return r }
+                extract(urldecode(it))?.let { r -> return r }
             }
             runCatching { el.arkElement?.bytesData }.getOrNull()?.let {
                 extract(it)?.let { r -> return r }
+                extract(urldecode(it))?.let { r -> return r }
             }
             runCatching { el.arkElement?.linkInfo?.desc }.getOrNull()?.let {
                 extract(it)?.let { r -> return r }
@@ -143,6 +159,11 @@ object BiliCard {
         }
         return null
     }
+
+    /** 简单 URL 反转义：%XX → 字符（小程序 JSON 里常见 %2F %3A 编码）。 */
+    private fun urldecode(s: String): String = runCatching {
+        java.net.URLDecoder.decode(s, "UTF-8")
+    }.getOrDefault(s)
 
     /** 绑定消息单元格并显示卡片（调用方已判定 [ref] 非空）。 */
     fun bind(widget: AIOCellGroupWidget, ref: BiliRef) {
@@ -292,12 +313,16 @@ object BiliCard {
 
     /** 打开客户端：优先「哔哩终端」，其次官方 bilibili，最后系统浏览器。 */
     fun openClient(ctx: Context, info: VideoInfo) {
-        val biliClient = Intent(Intent.ACTION_VIEW, Uri.parse(info.webUrl())).apply {
-            setPackage("com.RobinNotBad.BiliClient")
+        // 哔哩终端：GetIntentActivity 支持 type=video_bv + content=BV 直开（比 URL 解析更稳，
+        // 且本 ROM 上 URL 入口会崩——它把 BV 当 aid 解析抛异常）。
+        val biliClient = Intent().apply {
+            setClassName("com.RobinNotBad.BiliClient", "com.RobinNotBad.BiliClient.activity.GetIntentActivity")
+            putExtra("type", "video_bv")
+            putExtra("content", info.bvid)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         if (biliClient.resolveActivity(ctx.packageManager) != null) {
-            Utils.log("BiliCard: 打开哔哩终端 ${info.webUrl()}")
+            Utils.log("BiliCard: 打开哔哩终端 ${info.bvid}")
             runCatching { ctx.startActivity(biliClient) }
                 .onFailure { Utils.log("BiliCard: client open failed: $it") }
             return
