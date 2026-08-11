@@ -63,7 +63,8 @@ object RichTitlebar {
     private val unread = java.util.concurrent.ConcurrentHashMap<String, Int>()
     private val listenerRegistered = AtomicBoolean(false)
 
-    fun build(fragment: androidx.fragment.app.Fragment, root: ViewGroup, baseInset: Int = 0) {
+    /** 构建标题栏；返回实际加进去的栏高（px，失败/跳过返回 0），供外层推内容时对齐。 */
+    fun build(fragment: androidx.fragment.app.Fragment, root: ViewGroup, baseInset: Int = 0): Int {
         runCatching {
             val ctx = root.context
 
@@ -88,7 +89,7 @@ object RichTitlebar {
             Utils.log("RichTitlebar build: name=$name peer=$peerId type=$chatType")
             if (name.isEmpty()) {
                 Utils.log("RichTitlebar: blank name, skip")
-                return
+                return 0
             }
 
             // Remove the page-indicator dots — the titlebar shows only the name + member count.
@@ -116,7 +117,7 @@ object RichTitlebar {
             }
             val nameTv = TextView(ctx).apply {
                 setTextColor(M3.onSurface)
-                textSize = 15f
+                textSize = 13f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
                 isSingleLine = true
                 if (Settings.titlebarMarquee.value) {
@@ -129,12 +130,12 @@ object RichTitlebar {
                     ellipsize = TextUtils.TruncateAt.END
                 }
                 // Render QQ sysface codes in the name into face glyphs (a plain TextView shows the
-                // raw codes as □ boxes), sized to the 15sp title.
-                text = FontPack.fallback(renderQQFaces(name, 15))
+                // raw codes as □ boxes), sized to the 13sp title.
+                text = FontPack.fallback(renderQQFaces(name, 13))
             }
             val countTv = TextView(ctx).apply {
                 setTextColor(M3.onSurface)
-                textSize = 15f
+                textSize = 13f
                 typeface = android.graphics.Typeface.DEFAULT_BOLD
                 isSingleLine = true
                 text = ""
@@ -214,7 +215,11 @@ object RichTitlebar {
             ensureListener()
             applyUnread()
 
-            root.addView(bar, FrameLayout.LayoutParams(FILL, heightPx))
+            // 栏高至少容纳标题文字的行高（MiSans Bold 行高略大于字号，16dp 栏会被裁掉底部）。
+            val titleLinePx = nameTv.paint.fontMetrics.let {
+                ((it.descent - it.ascent) + 2 * ctx.resources.displayMetrics.density).toInt()
+            }
+            root.addView(bar, FrameLayout.LayoutParams(FILL, maxOf(heightPx, titleLinePx)))
             // Re-assert on top after the async ChatFragment view attaches (chat-only overlay).
             bar.bringToFront()
             root.post { bar.bringToFront() }
@@ -222,7 +227,9 @@ object RichTitlebar {
             // bar should stay showing, native adjustPan when it should slide off) — no IME listener.
             attachWindowMode(bar)
             Utils.log("RichTitlebar: built (name=$name group=$isGroup)")
+            return maxOf(heightPx, titleLinePx)
         }.onFailure { Utils.log("RichTitlebar.build failed: $it") }
+        return 0
     }
 
     // The chat window's native soft-input mode (adjustPan), saved when we force adjustResize so it can

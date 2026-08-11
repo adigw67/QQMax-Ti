@@ -57,10 +57,11 @@ class WatchAIOPageReset : WatchAIOFragment() {
                 // Legacy placement: bar at the fragment root, overlaying every ViewPager page.
                 // The chat content (bubbles + input pill) is inset from the screen edge by a small base
                 // padding (~4dp) on top of the corner margin. Add it so the titlebar lines up with the pill.
-                RichTitlebar.build(this, view as ViewGroup, 6.dp)
+                val barH = RichTitlebar.build(this, view as ViewGroup, 6.dp)
                 // Push the chat content below the (possibly taller) titlebar.
-                val h = Settings.titlebarHeight.value.toInt().dp
-                f?.let { it.setPadding(it.paddingLeft, h, it.paddingRight, it.paddingBottom) }
+                if (barH > 0) {
+                    f?.let { it.setPadding(it.paddingLeft, barH, it.paddingRight, it.paddingBottom) }
+                }
             }
         }
         // Optional unread badge floating over the chat's top-left corner (independent of titlebar).
