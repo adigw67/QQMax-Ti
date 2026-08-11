@@ -184,8 +184,11 @@ object RichTitlebar {
                 // No elevation on this API 19 watch — pull the bar in front explicitly after attach.
                 bar.post { bar.bringToFront() }
             }
-            // 纯色 M3 surface 背景：底部已有 1dp 分隔线（边缘线），不再用渐变淡出。
-            bar.background = android.graphics.drawable.ColorDrawable(M3.surface)
+            // 纯色背景：浅色模式用纯白（顶栏顶部视觉上应为白），深色模式用 M3 surface；
+            // 底部已有 1dp 分隔线（边缘线），不再用渐变淡出。
+            bar.background = android.graphics.drawable.ColorDrawable(
+                if (Settings.lightMode.value) 0xFF_FFFFFF.toInt() else M3.surface
+            )
             // MD3 顶栏：底部一条 1dp outlineVariant 分隔线，把标题栏与消息区区分开。
             bar.addView(View(ctx).apply { setBackgroundColor(M3.outlineVariant) },
                 FrameLayout.LayoutParams(FILL, 1.dp, Gravity.BOTTOM))
