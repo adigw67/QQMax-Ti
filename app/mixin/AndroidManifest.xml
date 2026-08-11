@@ -52,6 +52,10 @@
         <activity
             android:name="momoi.mod.qqpro.hook.ImagePickerActivity"
             android:exported="false" />
+        <!-- B站视频卡片详情页：封面/简介/数据/标签，跳转哔哩终端或官方客户端。 -->
+        <activity
+            android:name="momoi.mod.qqpro.hook.BiliDetailActivity"
+            android:exported="false" />
         <activity android:name="com.tencent.qqnt.watch.app.JumpActivity">
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />

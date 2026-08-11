@@ -483,9 +483,12 @@ object AIOCell {
             // Same guard as linkify: don't run link preview off a special message's
             // hidden contentWidget text (e.g. a file extension matched as a URL).
             if (matched == null || matched.appendMode) {
-                LinkPreview.bind(widget)
+                // B站视频卡片优先：识别到 bilibili 链接时隐藏普通链接预览。
+                if (BiliCard.bind(widget)) LinkPreview.hide(widget)
+                else LinkPreview.bind(widget)
             } else {
                 LinkPreview.hide(widget)
+                BiliCard.hide(widget)
             }
             PlusOneButton.bind(widget, item)
             // Translate this text bubble (manual 翻译 entry or per-chat 翻译全部消息). No-op for

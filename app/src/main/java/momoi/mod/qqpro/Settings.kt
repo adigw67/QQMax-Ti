@@ -260,6 +260,8 @@ object Settings {
     // Try to resolve a client-side preview (icon/title/description) for links in
     // messages and show it below the text. Makes a network request per unique link.
     val enableLinkPreview = BooleanPref("enableLinkPreview", true)
+    // B站视频卡片：消息含 bilibili 链接时显示视频信息卡片（封面/标题/数据），点击进详情。
+    val biliCard = BooleanPref("biliCard", true)
     // Max display height for chat images, as a fraction of the screen height. Caps tall
     // images so they don't fill the watch screen. Default 0.5 (half the screen).
     val picMaxHeightRatio = FloatPref("picMaxHeightRatio", 0.5f)
@@ -572,7 +574,7 @@ object Settings {
         showStatusBar, backToFirstPage, attachmentOverlay, materialAttachmentMenu, materialLongPressMenu, longPressMenuOrder, attachmentMenuOrder, enableTitlebar, titlebarChatOnly, titlebarShowUnread,
         floatUnreadInChat, titlebarHeight, hideTitlebarWhenTyping, chatImportantJump, mainNavCustom, bottomMainNav, mainNavHeight, mainNavSquare, mainNavAllIcons, mainNavUnread, mainNavUnreadJump,
         replyFullSearch, useInAppCamera, gallerySortByDateTaken,
-        galleryQuickSend, editSingleImageBeforeSend, useSystemImagePicker, useSystemAudioPicker, confirmOpenLink, wideUrlMatch, parseNumber, parseAtMember, highlightSelfMention, enableLinkPreview,
+        galleryQuickSend, editSingleImageBeforeSend, useSystemImagePicker, useSystemAudioPicker, confirmOpenLink, wideUrlMatch, parseNumber, parseAtMember, highlightSelfMention, enableLinkPreview, biliCard,
         picMaxHeightRatio, longScreenshot, bubbleCornerRadius, bubbleColorSelf, bubbleColorOther, textColor, textColorSelf, linkColor, contactSections, materialContactsList, materialChatList, materialQZoneBar, qzoneBarSpread, qzoneInlineVideo, qzoneMiniAppCard, materializeQzone, qzoneTruncatePost, qzoneTruncateImages,
         profileNameMultiline, useRichProfile, useM3Settings, materializeLogin,
         translateViewLang, translateSendLang, translateShowAllSwitch, translateOwnMessages, translateReplaceInPlace, translateSendButton,

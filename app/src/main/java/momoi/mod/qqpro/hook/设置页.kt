@@ -589,6 +589,7 @@ class 设置页 : SettingsActivity() {
             switch("识别@成员", "群聊中把 @成员 及灰条提示中的成员名变为可点击，点击打开其资料卡(同点头像/昵称)", Settings.parseAtMember)
             switch("高亮@我", "群聊中 @我自己 的提及用错误色高亮，使之更醒目(需开启识别@成员)", Settings.highlightSelfMention)
             switch("链接预览", "消息含链接时尝试解析网站图标、标题与简介，显示在消息下方", Settings.enableLinkPreview)
+            switch("B站视频卡片", "消息含 bilibili 链接（b23.tv / video/BV.. / av..）时显示视频卡片（封面/标题/播放/点赞/投币/收藏/评论），点击进详情并可跳转哔哩终端或官方客户端", Settings.biliCard)
             colorPicker("链接颜色", "可点击链接/号码/@成员的文字颜色，留空为默认", Settings.linkColor, MaterialColors.ACCENT,
                 { M3.parseColorOrNull(Settings.linkColor.value) ?: M3.primary })
         },
