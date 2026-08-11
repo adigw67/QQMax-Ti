@@ -30,6 +30,7 @@ import com.tencent.watch.qzone_impl.frame.QZoneMainFrame
 import com.tencent.watch.qzone_impl.frame.QZoneMineFragment
 import com.tencent.watch.qzone_impl.utils.StringUtil
 import loadPicUrl
+import momoi.mod.qqpro.util.ChatBackground
 import momoi.mod.qqpro.hook.view.InlineVideoView
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.hook.QZoneMiniApp
@@ -103,8 +104,13 @@ object QzoneFeedM3 {
             }
             val rv = (0 until srl.childCount).mapNotNull { srl.getChildAt(it) as? RecyclerView }.firstOrNull()
                 ?: run { Utils.log("QzoneFeedM3: no RecyclerView in SmartRefreshLayout"); return }
-            // The native window behind the list is pure black; give the feed an M3 surface.
-            runCatching { srl.setBackgroundColor(M3.surface); rv.setBackgroundColor(M3.surface) }
+            if (ChatBackground.pagesEnabled()) {
+                // 其他界面背景：列表与容器改透明，露出背景层。
+                runCatching { srl.setBackgroundColor(0); rv.setBackgroundColor(0) }
+            } else {
+                // The native window behind the list is pure black; give the feed an M3 surface.
+                runCatching { srl.setBackgroundColor(M3.surface); rv.setBackgroundColor(M3.surface) }
+            }
             val adapter = FeedAdapter(host, perUser)
             adapters[key] = adapter
             activeSrl = java.lang.ref.WeakReference(srl)

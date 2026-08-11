@@ -89,6 +89,7 @@ private const val REQ_PICK_MONET_IMG = 0x9B04
 // Kept at file scope (not a @Mixin field — those can't have initializers) so
 // onActivityResult can refresh the picker's status text after picking/clearing.
 private var bgStatusLabel: TextView? = null
+private var pagesBgStatusLabel: TextView? = null
 private var pendingBgPeer: String? = null
 private var fontStatusLabel: TextView? = null
 
@@ -481,6 +482,8 @@ class 设置页 : SettingsActivity() {
             switch("背景半透明", "开启后背景图按下方透明度值半透明显示，露出 M3 surface；关闭则背景图不透明。重进聊天页生效", Settings.chatBgTranslucent)
             switch("圆表适配（实验性）", "背景图按圆屏内切圆裁剪，四角露出 M3 surface（圆表安全区）；重进聊天页生效", Settings.md3eRound)
             chatBackgroundPicker()
+            switch("其他界面背景（实验性）", "主界面/联系人/动态/我的 等非聊天页面显示背景图（与聊天背景互相独立）；透明度/变暗沿用上方聊天背景设置，重进页面生效", Settings.pagesBgEnabled)
+            pagesBackgroundPicker()
             slider("背景图片透明度", "背景图自身半透明程度（越小越透，露出下方 M3 surface），需开启「背景半透明」；重进聊天页生效", Settings.chatBgAlpha, min = 0.3f, max = 1f)
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)
         },
@@ -1020,6 +1023,10 @@ class 设置页 : SettingsActivity() {
             val peer = CurrentContact.peerUid
             append("当前会话：${if (peer.isNotBlank() && ChatBackground.peerSet(peer)) "已设置" else "未设置"}")
         }
+        pagesBgStatusLabel?.text = buildString {
+            append("其他界面：${if (ChatBackground.pagesSet()) "已设置" else "未设置"} · ")
+            append("开关：${if (Settings.pagesBgEnabled.value) "开" else "关"}")
+        }
     }
 
     private fun GroupScopeFix.chatBackgroundPicker() = card { card ->
@@ -1069,6 +1076,35 @@ class 设置页 : SettingsActivity() {
                         ChatBackground.clear(null)
                         updateBgStatus()
                         Utils.toast(this@设置页, "已清除全局背景")
+                    }.weight(1f).margin(left = 4.dp)
+                }
+        }
+    }
+
+    /** 其他界面背景图片：设置（内置选图 → 裁剪）/ 清除，所有主界面页面共用一张。 */
+    private fun GroupScopeFix.pagesBackgroundPicker() = card { card ->
+        card.vertical()
+        card.content {
+            titleColumn("其他界面背景图片（实验性）", "主界面/联系人/动态/我的 共用一张背景图；选图后强制裁剪到屏幕比例，透明度/变暗沿用聊天背景设置").width(FILL)
+            pagesBgStatusLabel = add<TextView>()
+                .textSize(11f)
+                .textColor(M3.onSurfaceVariant)
+                .padding(top = 4.dp)
+            updateBgStatus()
+            add<LinearLayout>()
+                .width(FILL)
+                .padding(top = 8.dp)
+                .content {
+                    pillButton("设置背景", ACCENT) {
+                        pendingBgPeer = "pages"
+                        pickChatBackground()
+                    }
+                        .weight(1f)
+                        .margin(right = 4.dp)
+                    pillButton("清除背景", M3.error) {
+                        ChatBackground.clearPages()
+                        updateBgStatus()
+                        Utils.toast(this@设置页, "已清除其他界面背景")
                     }.weight(1f).margin(left = 4.dp)
                 }
         }
