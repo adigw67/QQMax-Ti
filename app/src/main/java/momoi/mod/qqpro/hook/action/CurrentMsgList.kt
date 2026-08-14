@@ -17,8 +17,13 @@ import com.tencent.aio.part.root.panel.content.firstLevel.msglist.mvx.intent.Msg
 import com.tencent.watch.aio_impl.coreImpl.repo.WatchMsgListRepo
 import com.tencent.watch.aio_impl.coreImpl.vb.WatchAIOListVB
 import com.tencent.watch.aio_impl.data.WatchAIOMsgItem
+import com.tencent.watch.aio_impl.ui.widget.AIOCellGroupWidget
 import kotlinx.coroutines.CoroutineScope
 import momoi.anno.mixin.Mixin
+import momoi.mod.qqpro.Settings
+import momoi.mod.qqpro.enums.ElementType
+import momoi.mod.qqpro.enums.NTMsgType
+import momoi.mod.qqpro.hook.aio_cell.AIOCell
 import momoi.mod.qqpro.lib.Observable
 import momoi.mod.qqpro.util.ThreadManager
 import momoi.mod.qqpro.util.Utils
@@ -34,6 +39,21 @@ object CurrentMsgList {
     var msgList = Observable(mutableListOf<WatchAIOMsgItem>())
         private set
 
+    // 防撤回：被撤回但被我们保留显示的消息 msgId（会话级，切换聊天时随 Clear 清空）。
+    // 气泡绑定处据此显示“已撤回”标记（聊天与截图走同一绑定路径，两处都会带上）。
+    private val recalledMsgIds = HashSet<Long>()
+
+    // 防撤回：镜像（msgList）里是否还残留撤回灰条。仅当防撤回功能中途开启、上一帧已把灰条
+    // 并入镜像时为 true；置位后下一帧做一次镜像清理即可复位。正常状态下保持 false，
+    // 这样渲染路径不需要每个帧都全量扫描历史（老手表上全量扫描即表现为聊天卡死）。
+    private var mirrorMayContainGrayTips = false
+
+    /** 情况 2 从镜像找回原消息时，向下搜索的最大范围（容忍同帧内灰条被丢弃的位置漂移）。 */
+    private const val RESTORE_SEARCH_WINDOW = 8
+
+    fun isRecalled(item: WatchAIOMsgItem): Boolean =
+        item.d.msgId in recalledMsgIds
+
     // Fires (after [msgList] has been updated) ONLY for older-history "load previous page" results.
     // The value carried is MsgListState.updateType: it has bit 0x4 set for any pre-page result, and
     // equals 5 (LoadPrePageFail) when the top of history is reached. Unrelated list updates (incoming
@@ -44,6 +64,125 @@ object CurrentMsgList {
 
     fun getMsgIndex(msg: WatchAIOMsgItem): Int {
         return msgList.value.indexOf(msg)
+    }
+
+    /**
+     * True when [item] is a recall grey tip ("XXX 撤回了一条消息"): msgType GRAYTIPS (5) whose
+     * element is a GREY_TIP (8) with subElementType 1 and a populated revokeElement. Other grey
+     * tips (拍一拍/邀请/改群名/群公告等) use different subElementTypes and stay untouched.
+     */
+    private fun isRecallGrayTip(item: WatchAIOMsgItem): Boolean {
+        if (item.d.msgType != NTMsgType.GRAYTIPS) return false
+        val element = item.d.elements?.firstOrNull() ?: return false
+        if (element.elementType != ElementType.GREY_TIP) return false
+        val gray = element.grayTipElement ?: return false
+        return gray.subElementType == 1 && gray.revokeElement != null
+    }
+
+    /**
+     * 防撤回：把内核刚推来的列表里的撤回灰条，在合并前替换回被撤回的原消息。
+     *
+     * 只在 [list] 里确实出现撤回灰条（或镜像还残留灰条需要清理）时才做事；正常消息帧
+     * 只做 O(当前帧) 的检查，绝不扫描整段历史，避免渲染路径在主线程上卡死。
+     *
+     * 内核有两种表现：
+     *  1. 原地替换——灰条与原消息同 msgId，直接用镜像里保留的原消息顶回；
+     *  2. 新增灰条并移除原消息——灰条是新 msgId，原消息仍在我们累计的镜像里，按灰条在
+     *     列表中的位置从镜像找回（原消息不在内核新列表里、且本帧尚未恢复过才匹配，
+     *     避免误换其他消息或产生重复气泡）。
+     *
+     * 两种情况都找不到原消息（例如聊天重进后库里只剩灰条）时直接丢弃灰条，不渲染。
+     * 返回 true 表示对 [list] 做过改写。
+     */
+    private fun restoreRecalled(
+        list: LinkedList<WatchAIOMsgItem>,
+        mirror: MutableList<WatchAIOMsgItem>
+    ): Boolean {
+        if (list.isEmpty()) return false
+        val incomingIds = HashSet<Long>(list.size * 2)
+        var sawGrayTip = false
+        for (item in list) {
+            if (isRecallGrayTip(item)) sawGrayTip = true
+            incomingIds.add(item.d.msgId)
+        }
+        // 镜像里残留的撤回灰条（设置中途开启时上一帧已混入的）一次性清掉；
+        // 无论是否真的清到，清理后镜像即视为干净，下一帧不再扫描。
+        mirror.removeAll { isRecallGrayTip(it) }
+        mirrorMayContainGrayTips = false
+        if (!sawGrayTip) return false
+
+        // 正常恢复帧才会走到下面：一次 O(镜像) 构建原消息索引 + 一次 O(当前帧) 重建列表。
+        val originalsById = HashMap<Long, WatchAIOMsgItem>()
+        // 注意：不能写 HashMap.putIfAbsent —— 该方法是 Java 8/API 24+，在 API 19（安卓4.4）
+        // 设备上直接 NoSuchMethodError，导致防撤回恢复每次都在这里失败（此前“卡死/没生效”的根因）。
+        for (m in mirror) {
+            if (!originalsById.containsKey(m.d.msgId)) originalsById[m.d.msgId] = m
+        }
+
+        val restored = ArrayList<WatchAIOMsgItem>(list.size)
+        val restoredIds = HashSet<Long>(list.size * 2)
+        var pos = 0
+        var restoredCount = 0
+        var droppedCount = 0
+        for (item in list) {
+            if (!isRecallGrayTip(item)) {
+                restored.add(item)
+                restoredIds.add(item.d.msgId)
+                pos++
+                continue
+            }
+            // 1) 灰条与原消息同 msgId（内核原地替换）→ 用镜像里的原消息顶回。
+            //    restoredIds 守卫防止内核同帧既保留原消息又带灰条时产生重复气泡。
+            val byId = originalsById[item.d.msgId]
+            if (byId != null && restoredIds.add(byId.d.msgId)) {
+                restored.add(byId)
+                recalledMsgIds.add(byId.d.msgId)
+                restoredCount++
+                pos++
+                continue
+            }
+            // 2) 灰条是新 msgId，原消息被内核移除 → 在镜像里该灰条位置附近找回
+            //    （原消息不在内核新列表里、且本帧尚未恢复过才匹配）。
+            val mirrorAt = nearestRecallable(mirror, pos, incomingIds, restoredIds)
+            if (mirrorAt != null) {
+                restored.add(mirrorAt)
+                recalledMsgIds.add(mirrorAt.d.msgId)
+                restoredCount++
+                pos++
+                continue
+            }
+            // 3) 找不到原消息 → 直接丢弃灰条（消息就当作没被撤回显示）
+            droppedCount++
+            pos++
+        }
+        list.clear()
+        list.addAll(restored)
+        Utils.log("antiRecall restore: grayTips=${restoredCount + droppedCount} restored=$restoredCount dropped=$droppedCount")
+        return true
+    }
+
+    /**
+     * 在镜像 [pos] 附近（向下最多 [RESTORE_SEARCH_WINDOW] 条）找一条可恢复的原消息：
+     * 非灰条、msgId 不在内核新列表里、且本帧尚未恢复过。向下小范围搜索是为了容忍
+     * 同帧内前面已有灰条被丢弃导致的位置漂移，窗口有限保证开销有界。
+     */
+    private fun nearestRecallable(
+        mirror: List<WatchAIOMsgItem>,
+        pos: Int,
+        incomingIds: Set<Long>,
+        used: Set<Long>
+    ): WatchAIOMsgItem? {
+        var i = pos
+        var steps = 0
+        while (i >= 0 && steps <= RESTORE_SEARCH_WINDOW) {
+            val m = mirror.getOrNull(i)
+            if (m != null && !isRecallGrayTip(m) &&
+                m.d.msgId !in incomingIds && m.d.msgId !in used
+            ) return m
+            i--
+            steps++
+        }
+        return null
     }
 
     /**
@@ -71,6 +210,34 @@ object CurrentMsgList {
         }.onFailure { Utils.log("prevMsg live lookup failed: $it") }
         val mi = msgList.value.indexOf(msg)
         return if (mi > 0) msgList.value.getOrNull(mi - 1) else null
+    }
+
+    /**
+     * 渲染后补标“已撤回”：恢复发生在渲染前，适配器对比新旧列表时原消息“没变”，不会重新
+     * bind，因此仅靠 bind 路径的标记在撤回那一帧不会显示。这里在提交渲染后主动给当前可见的
+     * 已撤回气泡补上小字（diff 异步生效，所以由调用方 post 到下一帧执行）。
+     */
+    private fun markRecalledVisible() {
+        if (!Settings.antiRecall.value || recalledMsgIds.isEmpty()) return
+        runCatching {
+            val rv = vb.H
+            val childCount = rv.childCount
+            if (childCount == 0) return
+            val live = uiOp?.m() ?: return
+            for (i in 0 until childCount) {
+                val child = rv.getChildAt(i) ?: continue
+                val pos = rv.getChildAdapterPosition(child)
+                if (pos < 0) continue
+                val item = live.getOrNull(pos) as? WatchAIOMsgItem ?: continue
+                if (!isRecalled(item)) continue
+                // 优先传气泡内容视图（正文 TextView 所在子树），避免整格扫描误标昵称/时间；
+                // 拿不到时退回整格（候选匹配兜底）。
+                val contentRoot = runCatching {
+                    (child as? AIOCellGroupWidget)?.getContentWidget<View>()
+                }.getOrNull()
+                AIOCell.appendRecallMark(item, contentRoot ?: child)
+            }
+        }.onFailure { Utils.log("antiRecall markRecalledVisible failed: $it") }
     }
 
     /**
@@ -333,6 +500,25 @@ object CurrentMsgList {
                 state.javaClass.getDeclaredField("c").apply { isAccessible = true }.getInt(state)
             }.getOrElse { -1 }
             val list = state as LinkedList<WatchAIOMsgItem>
+            val antiRecall = Settings.antiRecall.value
+            // 防撤回：仅在收到撤回灰条（或镜像还有待清理的残留灰条）时做恢复/清理；
+            // 正常消息帧不扫描镜像，避免每次渲染都全量遍历历史导致聊天卡死。
+            // 恢复失败时保留内核原列表（灰条照常显示），绝不阻塞渲染。
+            if (antiRecall) {
+                runCatching {
+                    val incomingHasGrayTip = list.any { isRecallGrayTip(it) }
+                    if (incomingHasGrayTip || mirrorMayContainGrayTips) {
+                        restoreRecalled(list, msg)
+                    }
+                }.onFailure {
+                    Utils.log("antiRecall restore failed: $it")
+                    // 失败帧可能已把灰条混入镜像/列表，下一帧再清理一次。
+                    mirrorMayContainGrayTips = true
+                }
+            } else if (list.any { isRecallGrayTip(it) }) {
+                // 关闭防撤回时灰条照常进入镜像；开启后首帧据此做一次性清理。
+                mirrorMayContainGrayTips = true
+            }
             // Diagnostic: capture what the kernel handed us vs our accumulated mirror, so an
             // empty RecyclerView (incoming list size 0 → blank chat) is distinguishable from a
             // render-side problem (non-zero list but cells invisible). peer ties it to the chat.
@@ -373,6 +559,10 @@ object CurrentMsgList {
             // native render so the layout pass it triggers already sees needTopToBottom=false.
             forceBottomAlign()
             super.n(list as MsgListUiState, uiHelper)
+            // 防撤回：渲染后给可见的已撤回气泡补“已撤回”小字（diff 异步，post 到下一帧）。
+            if (antiRecall && recalledMsgIds.isNotEmpty()) {
+                vb.H.post { markRecalledVisible() }
+            }
         }
     }
 
@@ -426,6 +616,8 @@ object CurrentMsgList {
         ): View {
             Utils.log("MsgList.Clear: resetting msgList mirror (isPreload=$isPreload)")
             msgList = Observable(ArrayList())
+            recalledMsgIds.clear()
+            mirrorMayContainGrayTips = false
             scrollSettledSinceOpen = false
             return super.a(fragment, inflater, container, isPreload)
         }

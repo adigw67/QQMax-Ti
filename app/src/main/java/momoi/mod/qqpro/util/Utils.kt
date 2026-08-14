@@ -57,9 +57,9 @@ object Utils {
 
     /** The on-device debug log file ([log] appends here). Exposed so the debug menu can read it. */
     val debugLogFile by lazy {
-        // externalCacheDir can be null on some ROMs (external storage unmounted); fall back
-        // so the log still lands somewhere writable instead of a relative (unwritable) path.
-        java.io.File(application.safeCacheDir, "qqpro_debug.log")
+        // 固定用内部缓存目录：外部存储路径在这块表上可能不存在/只读，导致日志永远落不了盘。
+        val base = runCatching { application.cacheDir }.getOrNull() ?: application.filesDir
+        java.io.File(base, "qqpro_debug.log")
     }
 
     // Read the "启用日志" toggle straight from the qqpro prefs (not the Settings object) so logging
@@ -69,29 +69,54 @@ object Utils {
     /**
      * Logging requires the explicit "启用日志" setting (default off). Debug builds previously forced
      * it on, which made every hot-path log do a synchronous append to qqpro_debug.log on the main
-     * thread — on this slow watch that alone stalls scrolling and message binds. The setting still
-     * exists for diagnostics; it just isn't auto-enabled anymore.
+     * thread, and every Log.e/QLog.e write blocked whenever the device's logcat ring buffer was full
+     * (this watch's 256K buffers stay ~100% full, so a main-thread write can block forever → 输入
+     * 超时 ANR/卡死). Both are now offloaded to a single daemon thread with a bounded queue:
+     * [log] never blocks the caller, never grows unbounded, and preserves ordering. The setting
+     * still exists for diagnostics; it just can't stall the UI anymore.
      */
     val loggingEnabled: Boolean get() = proPrefs.getBoolean("enableLog", false)
+
+    // 单线程日志泵：offer 永不阻塞调用线程（队列满时丢弃最旧语义由 FIFO 自然保证——超限直接丢弃
+    // 新日志，诊断日志本来就是尽力而为）；写 logcat 与同步追加文件都发生在这个后台线程上。
+    private val logQueue = java.util.concurrent.LinkedBlockingQueue<String>(1000)
+
+    private val logPump: Thread by lazy {
+        Thread({
+            while (true) {
+                val msg = logQueue.take()
+                // 文件优先：logcat 缓冲写满时会阻塞写者，而日志文件是诊断的可靠通道，必须先落盘。
+                try {
+                    debugLogFile.parentFile?.mkdirs()
+                    debugLogFile.appendText("${System.currentTimeMillis()} $msg\n")
+                } catch (t: Throwable) {
+                }
+                try {
+                    Log.e("QQ Max", msg)
+                } catch (t: Throwable) {
+                }
+                try {
+                    QLog.e("QQ Max", 1, msg)
+                } catch (t: Throwable) {
+                }
+            }
+        }, "qqpro-log").apply {
+            isDaemon = true
+            priority = Thread.MIN_PRIORITY
+            start() // 必须启动，否则队列永不消费、日志被静默丢弃
+        }
+    }
 
     /** Save the full on-device debug log file to the Downloads folder. Returns the saved location. */
     fun saveLogToDownloads(): momoi.mod.qqpro.watchdog.LogExporter.Saved? =
         momoi.mod.qqpro.watchdog.LogExporter.saveFile(application, "qqpro_debug", debugLogFile, "log")
 
     fun log(msg: String) {
-        // Always log in debug builds; in release only when the user enabled it (default off).
         if (!loggingEnabled) return
-        Log.e("QQ Max", msg)
-        // This watch ROM strips app android.util.Log; QLog reliably reaches logcat
         try {
-            QLog.e("QQ Max", 1, msg)
-        } catch (e: Throwable) {
-        }
-        // QLog output is gated by UIN_REPORTLOG_LEVEL and may be dropped, so also
-        // persist to a file we can `adb pull` regardless of logcat gating.
-        try {
-            debugLogFile.appendText("${System.currentTimeMillis()} $msg\n")
-        } catch (e: Throwable) {
+            logPump // 确保泵线程已启动（lazy，只启动一次）
+            logQueue.offer(msg) // 非阻塞；队列满时丢弃本条，绝不卡主线程
+        } catch (t: Throwable) {
         }
     }
 

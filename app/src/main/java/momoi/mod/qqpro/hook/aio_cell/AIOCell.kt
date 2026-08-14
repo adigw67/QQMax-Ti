@@ -2,7 +2,10 @@ package momoi.mod.qqpro.hook.aio_cell
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.text.method.LinkMovementMethod
 import android.view.View
 import com.tencent.mobileqq.text.style.EmoticonSpan
@@ -16,6 +19,7 @@ import com.tencent.watch.aio_impl.ui.cell.base.BaseWatchItemCell
 import com.tencent.watch.aio_impl.ui.cell.unsupport.WatchToQQViewMsgItem
 import com.tencent.watch.aio_impl.ui.widget.AIOCellGroupWidget
 import momoi.anno.mixin.Mixin
+import momoi.mod.qqpro.enums.ElementType
 import momoi.mod.qqpro.enums.NTMsgType
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.fitEmojiSpans
@@ -37,6 +41,7 @@ import momoi.mod.qqpro.lib.material.MaterialSymbols
 import momoi.mod.qqpro.util.parseHexColor
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.warpOnce
+import org.json.JSONObject
 import android.widget.LinearLayout
 import java.lang.ref.WeakReference
 import java.util.WeakHashMap
@@ -84,6 +89,148 @@ object AIOCell {
     }
 
     /**
+     * 防撤回标记：把“ 已撤回”小字附到被保留显示的撤回消息气泡文字后。
+     * 定位正文 TextView 时不再只依赖 textElement：markdown / struct(小程序) / ark(卡片)
+     * 等复合元素也能产出候选文本（含去掉标记/标签的纯文本版本）；候选全部匹配不上时
+     * 退回标记气泡内最长的 TextView（昵称/时间都远短于正文）。幂等：已带“已撤回”跳过。
+     */
+    fun appendRecallMark(item: WatchAIOMsgItem, root: View?) {
+        if (root == null || !Settings.antiRecall.value || !CurrentMsgList.isRecalled(item)) return
+        val candidates = recallTextCandidates(item)
+        if (candidates.isEmpty()) {
+            Utils.log("antiRecall: 无文本候选可定位红字 msgId=${item.d.msgId}")
+            return
+        }
+        runCatching {
+            var marked = false
+            fun visit(v: View) {
+                if (marked) return
+                if (v is TextView) {
+                    val cur = normalizeRecallText(v.text?.toString().orEmpty())
+                    if (cur.isEmpty() || cur.contains("已撤回")) return
+                    if (candidates.any { cur.contains(it) }) {
+                        markRecalled(v)
+                        marked = true
+                    }
+                } else if (v is ViewGroup) {
+                    for (i in 0 until v.childCount) visit(v.getChildAt(i))
+                }
+            }
+            visit(root)
+            if (!marked) {
+                // 兜底：渲染结果与候选差异大（如 markdown 渲染后插入按钮标签）时，
+                // 标记气泡内文本最长的 TextView。
+                var best: TextView? = null
+                var bestLen = -1
+                fun longest(v: View) {
+                    if (v is TextView) {
+                        val cur = v.text?.toString().orEmpty()
+                        if (cur.isBlank() || cur.contains("已撤回")) return
+                        if (cur.length > bestLen) {
+                            best = v
+                            bestLen = cur.length
+                        }
+                    } else if (v is ViewGroup) {
+                        for (i in 0 until v.childCount) longest(v.getChildAt(i))
+                    }
+                }
+                longest(root)
+                if (best != null) {
+                    Utils.log("antiRecall: 候选未匹配按最长文本兜底 msgId=${item.d.msgId} candidates=${candidates.take(3)}")
+                    markRecalled(best!!)
+                } else {
+                    Utils.log("antiRecall: 未找到可标记的正文 TextView msgId=${item.d.msgId}")
+                }
+            }
+        }.onFailure { Utils.log("anti-recall marker failed: $it") }
+    }
+
+    private fun markRecalled(tv: TextView) {
+        val cur = tv.text?.toString().orEmpty()
+        val sp = SpannableStringBuilder(cur)
+        val start = sp.length
+        sp.append(" 已撤回")
+        sp.setSpan(
+            RelativeSizeSpan(0.72f), start, sp.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        sp.setSpan(
+            ForegroundColorSpan(M3.error), start, sp.length,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        tv.text = sp
+    }
+
+    /**
+     * 收集撤回消息元素里可用于定位正文 TextView 的候选文本（归一化后去重）。
+     * 覆盖 text / markdown / struct XML / ark JSON / linkInfo 各元素。
+     */
+    private fun recallTextCandidates(item: WatchAIOMsgItem): List<String> {
+        val out = ArrayList<String>()
+        runCatching { item.d.elements }.getOrNull()?.forEach { el ->
+            runCatching { el.textElement?.content }.getOrNull()?.let { out.add(it) }
+            runCatching { el.markdownElement?.content }.getOrNull()?.let {
+                out.add(it)
+                // markdown 渲染后 **加粗** → 加粗，候选去掉语法标记后即可匹配。
+                out.add(Regex("""[*_~`#>]""").replace(it, ""))
+            }
+            runCatching { el.structMsgElement?.xmlContent }.getOrNull()?.let {
+                out.add(it)
+                val stripped = Regex("""<[^>]+>""").replace(it, " ")
+                out.add(stripped)
+                // 标签替换成空格会拆开相邻文本，再去空格生成紧贴版本便于匹配。
+                out.add(Regex("""\s+""").replace(stripped, ""))
+            }
+            runCatching { el.arkElement?.bytesData }.getOrNull()?.let {
+                // ark JSON：取所有可读字符串片段（title/desc/prompt/文本等）。
+                out.addAll(collectJsonStrings(it))
+            }
+            runCatching { el.arkElement?.linkInfo?.title }.getOrNull()?.let { out.add(it) }
+            runCatching { el.arkElement?.linkInfo?.desc }.getOrNull()?.let { out.add(it) }
+        }
+        val norm = out.mapNotNull { s ->
+            normalizeRecallText(s).takeIf { it.length >= 2 && it.length <= 300 }
+        }
+        return norm.distinct()
+    }
+
+    /** 递归收集 JSON 里所有 2..200 字符的字符串值，用于定位卡片/小程序正文。 */
+    private fun collectJsonStrings(raw: String): List<String> {
+        val out = ArrayList<String>()
+        try {
+            fun walk(v: Any) {
+                when (v) {
+                    is JSONObject -> {
+                        val it = v.keys()
+                        while (it.hasNext()) walk(v.get(it.next() as String))
+                    }
+                    is org.json.JSONArray -> {
+                        for (i in 0 until v.length()) walk(v.get(i))
+                    }
+                    is String -> {
+                        if (v.length in 2..200) out.add(v)
+                    }
+                }
+            }
+            walk(JSONObject(raw))
+        } catch (_: Exception) {
+            // 非 JSON 或解析失败：忽略，调用方已有其他候选
+        }
+        return out
+    }
+
+    /** 归一化：去零宽字符、统一空白、解 XML 实体、去首尾空白。 */
+    private fun normalizeRecallText(s: String): String =
+        s.replace("\u200b", "")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+
+    /**
      * The message text color for a bubble side [loc] (0 = other/对方, else self/我的): the per-side
      * override (other = [Settings.textColor], self = [Settings.textColorSelf]), else auto-contrast
      * against that side's bubble color so light bubbles get dark text and dark bubbles light text.
@@ -103,7 +250,9 @@ object AIOCell {
         addHook<ReplyView>(
             type = NTMsgType.REPLY,
             onBind = { msg, widget ->
-                val reply = msg.elements.firstNotNullOf { it.replyElement }
+                // firstNotNullOf 在元素存在但对应子元素为 null（如部分小程序/复合消息的
+                // 结构）时抛 NoSuchElementException，主线程未捕获会直接崩/卡死——全部改安全写法。
+                val reply = msg.elements.firstNotNullOfOrNull { it.replyElement } ?: return@addHook
                 loadData(CurrentContact, reply)
                 setOnClickListener(ReplyClick(widget, reply))
                 // The native bubble already renders its own "回复 xxx" line inside the content;
@@ -146,19 +295,22 @@ object AIOCell {
         addHook<CardMsgView>(
             type = NTMsgType.ARKSTRUCT,
             onBind = { msg, widget ->
-                loadData(msg.elements.firstNotNullOf { it.arkElement })
+                val ark = msg.elements.firstNotNullOfOrNull { it.arkElement } ?: return@addHook
+                loadData(ark)
             }
         )
         addHook<StructMsgView>(
             type = NTMsgType.STRUCT,
             onBind = { msg, widget ->
-                loadData(msg.elements.firstNotNullOf { it.structMsgElement })
+                val struct = msg.elements.firstNotNullOfOrNull { it.structMsgElement } ?: return@addHook
+                loadData(struct)
             }
         )
         // File transfers (local FILE and group ONLINEFILE) otherwise fall through
         // to the orange "view on phone" placeholder; render a name + size card.
         val fileBind: FileMsgView.(MsgRecordEx, AIOCellGroupWidget) -> Unit = { msg, widget ->
-            loadData(msg.elements.firstNotNullOf { it.fileElement })
+            val file = msg.elements.firstNotNullOfOrNull { it.fileElement }
+            if (file != null) loadData(file)
         }
         addHook<FileMsgView>(type = NTMsgType.FILE, onBind = fileBind)
         addHook<FileMsgView>(type = NTMsgType.ONLINEFILE, onBind = fileBind)
@@ -244,6 +396,19 @@ object AIOCell {
             runCatching {
                 ChatMultiSelect.bindCell(view, item.d.msgId, item.d.msgType)
             }.onFailure { Utils.log("ChatMultiSelect.bindCell failed: $it") }
+            // 表情回应：气泡下展示已有表态（空则跳过；点击小圆片切换本人表态）。
+            runCatching {
+                EmojiReaction.attach(view, item.d)
+                if (Utils.loggingEnabled) {
+                    val likes = runCatching { item.d.emojiLikesList }.getOrNull().orEmpty()
+                    if (likes.isNotEmpty()) {
+                        Utils.log(
+                            "EmojiReaction: msg=${item.d.msgId} likes=" +
+                                likes.joinToString("|") { "${it.emojiId}:${it.emojiType}:${it.likesCnt}:${it.isClicked}" }
+                        )
+                    }
+                }
+            }.onFailure { Utils.log("EmojiReaction.attach failed: $it") }
             // Universal per-bind diagnostic: log EVERY message as it binds, not just the
             // WatchToQQView placeholder / text bubbles. Previously most cell types (pic, mix,
             // ark, file, forward, markdown, …) emitted no log line at all, so messages appeared
@@ -471,6 +636,55 @@ object AIOCell {
             val loc = runCatching { widget.locationType }.getOrDefault(0)
             applyMsgTextStyle(runCatching { widget.contentWidget }.getOrNull(), loc)
             applyMsgTextStyle(matchedView, loc)
+            // 机器人消息占位兜底：手表内核把部分机器人消息直接以文本下发，内容就是
+            // “[暂不支持该消息类型，请用手机QQ查看]”。检测到占位文本就按 msgId 补拉真实内容，
+            // 拉到后（RobotMsgFetcher 缓存 + patchVisible）替换显示；拉不到保持占位。
+            runCatching {
+                val txt = item.d.elements?.firstOrNull { it.elementType == ElementType.TEXT }
+                    ?.textElement?.content
+                if (txt != null && txt.contains("暂不支持") && txt.contains("手机QQ")) {
+                    RobotMsgFetcher.request(item.d)
+                    val (fetchedText, fetchedMd) = RobotMsgFetcher.renderableFor(item.d.msgId)
+                    if (fetchedMd != null || fetchedText != null) {
+                        val tv = widget.contentWidget as? TextView ?: return@runCatching
+                        tv.text = if (fetchedMd != null) {
+                            momoi.mod.qqpro.lib.Markdown.toSpannable(fetchedMd)
+                        } else fetchedText
+                    }
+                }
+            }.onFailure { Utils.log("robot placeholder fetch failed: $it") }
+            // 机器人 markdown 消息：`renderBotText`（修复回复带图显示）已把 markdown 正文降级为
+            // 纯文本 cell，这里在 native bind 之后把正文替换为轻量 Markdown 渲染结果
+            // （**加粗**、*斜体*、`代码`、[链接] 等，与桌面版 QQ 的 markdown 消息一致）。
+            // 只在确实只携带 markdown 正文的消息上生效；纯文本/图片消息不受影响。
+            runCatching {
+                val tv = widget.contentWidget as? TextView ?: return@runCatching
+                // 元素里的 markdown 优先；元素为空时用按 msgId 补拉到的内容（RobotMsgFetcher）。
+                val (fetchedText, fetchedMd) = RobotMsgFetcher.renderableFor(item.d.msgId)
+                val mdEl = item.d.elements?.firstOrNull {
+                    it.elementType == ElementType.MARKDOWN &&
+                        it.markdownElement?.content?.isNotBlank() == true
+                }
+                val mdContent = mdEl?.markdownElement?.content ?: fetchedMd
+                if (mdContent != null) {
+                    val rendered = momoi.mod.qqpro.lib.Markdown.toSpannable(mdContent)
+                    if (rendered.isNotEmpty()) {
+                        // 机器人 markdown 消息常带 inline keyboard 按钮：把按钮标签附在正文下方。
+                        val kbRows = item.d.elements?.firstOrNull { it.inlineKeyboardElement != null }
+                            ?.inlineKeyboardElement?.rows
+                        val kbText = kbRows?.mapNotNull { row ->
+                            row.buttons?.mapNotNull { it.label?.takeIf { l -> l.isNotBlank() } }
+                                ?.joinToString(" · ")?.takeIf { it.isNotBlank() }
+                        }?.filterNotNull()?.joinToString("\n")?.takeIf { it.isNotBlank() }
+                        tv.text = if (kbText != null) {
+                            SpannableStringBuilder(rendered).append("\n🔘 ").append(kbText)
+                        } else rendered
+                    }
+                } else if (fetchedText != null) {
+                    // 补拉到的纯文本（ark 卡片文本等）替换占位符。
+                    tv.text = fetchedText
+                }
+            }.onFailure { Utils.log("markdown render failed: $it") }
             // The per-message timestamp is Canvas-drawn with a SHARED paint (default #99ffffff) — set
             // its color so it adapts to light/dark instead of being near-invisible on a light surface.
             runCatching { widget.aioRuntime.a().color = M3.onSurfaceVariant }
@@ -480,12 +694,32 @@ object AIOCell {
                 recolorTextViews(runCatching { widget.contentWidget }.getOrNull(), M3.onSurfaceTip)
             }
             BubbleCorner.apply(widget)
+            // 防撤回标记：被撤回但被我们保留显示的消息，在气泡文字后附上小字“已撤回”。
+            // 聊天与截图走同一绑定路径，因此聊天截图里同样显示该标记。
+            // 注意：撤回那一帧恢复发生在渲染前，适配器可能不会重新 bind（原消息“没变”），
+            // 所以渲染后还会由 CurrentMsgList.markRecalledVisible 补标一次。
+            appendRecallMark(item, runCatching { widget.contentWidget }.getOrNull())
             // B站视频卡片（链接 + 小程序分享）：识别到 bilibili 链接时，隐藏原小程序/链接预览，
             // 只显示视频卡片；否则按原有逻辑走链接预览。
+            // 检测在主线程同步做：扫描已硬限界（ark 只取头部 16K），且这个手表内核的消息元素
+            // 在后台线程读取 arkElement 会返回 null，异步扫描会导致解析失效。
+            val biliMsg = item.d as? MsgRecordEx
+            if (Utils.loggingEnabled && biliMsg != null) {
+                Utils.log(
+                    "BiliCard: bind check msgType=${runCatching { biliMsg.msgType }.getOrNull()} " +
+                        "sub=${runCatching { biliMsg.subMsgType }.getOrNull()} " +
+                        "els=${runCatching { biliMsg.elements?.size }.getOrNull()} " +
+                        "hasArk=${runCatching { biliMsg.elements?.any { it.arkElement != null } }.getOrNull()} " +
+                        "hasStruct=${runCatching { biliMsg.elements?.any { it.structMsgElement != null } }.getOrNull()}"
+                )
+            }
             val biliRef = BiliCard.refOf(
                 widget.getContentWidget<View>() as? TextView,
-                item.d as? MsgRecordEx,
+                biliMsg,
             ) ?: BiliCard.extractFromViews(matchedView)
+            if (Utils.loggingEnabled) {
+                Utils.log("BiliCard: bind result=${biliRef?.let { it::class.simpleName } ?: "null"}")
+            }
             if (biliRef != null) {
                 matchedView?.visibility = View.GONE
                 BiliCard.bind(widget, biliRef)
@@ -531,8 +765,10 @@ private fun elementContent(e: Any): String = runCatching {
     val fields = obj.javaClass.fields.mapNotNull { f ->
         val v = runCatching { f.get(obj) }.getOrNull() ?: return@mapNotNull null
         val s = when (v) {
-            is CharSequence -> v.toString()
-            is ByteArray -> runCatching { String(v) }.getOrDefault("<${v.size}b>")
+            // 诊断用内容截断必须在分配前做：小程序/ark 的 bytesData 可能是数百 KB 到数 MB 的
+            // ByteArray，主线程整段 String() 解码会瞬间大分配触发 GC 卡死（老手表实测 ANR）。
+            is CharSequence -> if (v.length > 256) v.subSequence(0, 256).toString() + "…" else v.toString()
+            is ByteArray -> if (v.size > 512) "<${v.size}b>" else runCatching { String(v) }.getOrDefault("<${v.size}b>")
             is Number, is Boolean, is Char -> v.toString()
             else -> return@mapNotNull null
         }.trim()

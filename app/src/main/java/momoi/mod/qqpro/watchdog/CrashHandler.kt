@@ -30,16 +30,13 @@ class CrashHandler(private val context: Context) : Thread.UncaughtExceptionHandl
         }
         Watchdog.report(context, Watchdog.KIND_CRASH, report)
 
-        // The viewer runs in another process; give AMS a moment to spawn it before we go away.
+        // 本 ROM（Xposed 改造）下走 defaultHandler 的 VM 收尾会在 AndroidRuntime::start 的
+        // DestroyJavaVM 等待里卡死——表现为“崩溃后进程假死 + ANR 弹窗”（实测 B 站小程序
+        // 消息未捕获异常后 15 秒 ANR）。这里不调用 defaultHandler，日志/报告落盘后直接干净
+        // 杀进程，让系统按正常崩溃重启，避免假死。
         try {
-            Thread.sleep(400)
-        } catch (_: InterruptedException) {
-        }
-
-        try {
-            defaultHandler?.uncaughtException(t, e)
-        } finally {
             android.os.Process.killProcess(android.os.Process.myPid())
+        } finally {
             exitProcess(10)
         }
     }

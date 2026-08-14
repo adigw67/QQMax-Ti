@@ -426,6 +426,7 @@ class 设置页 : SettingsActivity() {
             }
             switch("多选按时间排序", "多选转发/截图等批量操作时，选中消息按聊天时间顺序处理；关闭则按点选先后顺序", Settings.multiSelectTimeOrder)
             switch("多选复制含发送者", "多选复制/部分复制时，每条消息前加上发送者名字(“名字：内容”)", Settings.multiSelectCopySender)
+            multiTextInput("快捷回复", "长按消息菜单里的「快捷回复」选项，每行一条；发送时按原样保留空格", Settings.quickReplies)
         },
         SettingsCategory("聊天输入", "输入框、发送方式与表情") {
             switch("聊天页直接输入", "在聊天页用输入框替换键盘键，有文字时麦克风键变发送键", Settings.inlineChatInput)
@@ -465,6 +466,7 @@ class 设置页 : SettingsActivity() {
             slider("聊天文本缩放", "聊天气泡内文字大小", Settings.chatScale)
             slider("图片最大高度", "聊天图片最大显示高度(占屏幕高度比例)，默认 0.5", Settings.picMaxHeightRatio, min = 0.3f, max = 1f)
             switch("长截图支持", "查看大图时，若图片高度≥屏幕2倍(长截图)，默认按屏幕宽度铺满并定位到顶部，可上下滚动阅读；双击循环缩放：1档整图高度·2档铺满宽度·3档进一步放大", Settings.longScreenshot)
+            switch("防撤回", "开启后，别人撤回消息时聊天里不显示“XXX 撤回了一条消息”灰条，原消息保留可见（仅对撤回发生时聊天里已加载的消息生效）；关闭则恢复系统默认行为", Settings.antiRecall)
             slider("气泡圆角半径", "聊天气泡远离发送方的一侧用此大圆角、发送侧用其 40% 小圆角（MD3 造型）；合并转发/聊天记录块与回复块仍为统一圆角(dp)", Settings.bubbleCornerRadius, min = 0f, max = 24f)
             colorPicker("我的气泡颜色", "留空为材料色（不透明主色容器）", Settings.bubbleColorSelf, MaterialColors.ACCENT,
                 { M3.parseColorOrNull(Settings.bubbleColorSelf.value) ?: M3.tonalSolid })
@@ -1292,6 +1294,37 @@ class 设置页 : SettingsActivity() {
                 .textColor(M3.onSurface)
                 .width(FILL)
                 .doAfterTextChanged { pref.value = it?.toString() ?: "" }
+        }
+    }
+
+    /** 多行文本设置：每行一条，原样保存（不 trim，保留空格）。 */
+    private fun GroupScopeFix.multiTextInput(
+        title: String,
+        desc: String,
+        pref: Pref<String>
+    ) = card { card ->
+        card.vertical()
+        card.content {
+            titleColumn(title, desc).width(FILL)
+            val edit = add<EditText>()
+                .text(pref.value)
+                .textSize(13f)
+                .textColor(M3.onSurface)
+                .width(FILL)
+                .apply {
+                    minLines = 3
+                    maxLines = 8
+                    gravity = Gravity.TOP or Gravity.START
+                    setSingleLine(false)
+                    inputType = android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    setPadding(8.dp, 6.dp, 8.dp, 6.dp)
+                }
+            edit.background(GradientDrawable().apply {
+                setColor(M3.surfaceContainerHigh)
+                cornerRadius = 10.dp.toFloat()
+            })
+            edit.doAfterTextChanged { pref.value = it?.toString() ?: "" }
         }
     }
 

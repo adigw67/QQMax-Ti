@@ -262,6 +262,9 @@ object Settings {
     val enableLinkPreview = BooleanPref("enableLinkPreview", true)
     // B站视频卡片：消息含 bilibili 链接时显示视频信息卡片（封面/标题/数据），点击进详情。
     val biliCard = BooleanPref("biliCard", true)
+    // 防撤回：开启后，聊天里别人撤回消息时不显示“XXX 撤回了一条消息”灰条，
+    // 原消息保留可见（仅对撤回发生时聊天里已加载的消息生效）；关闭则恢复系统默认行为。
+    val antiRecall = BooleanPref("antiRecall", true)
     // Max display height for chat images, as a fraction of the screen height. Caps tall
     // images so they don't fill the watch screen. Default 0.5 (half the screen).
     val picMaxHeightRatio = FloatPref("picMaxHeightRatio", 0.5f)
@@ -505,6 +508,8 @@ object Settings {
     val multiSelectTimeOrder = BooleanPref("multiSelectTimeOrder", true)
     // 消息多选: prefix each message with the sender's name when copying (复制 / 部分复制). Default off.
     val multiSelectCopySender = BooleanPref("multiSelectCopySender", false)
+    // 长按消息菜单「快捷回复」的自定义短语列表，每行一条，按原样发送（保留空格）。
+    val quickReplies = StringPref("quickReplies", "")
 
     // Render a decorative titlebar (contact/group name only — no rounded corner / unread badge) at the
     // top of the screenshot. Default on.
@@ -575,7 +580,7 @@ object Settings {
         floatUnreadInChat, titlebarHeight, hideTitlebarWhenTyping, chatImportantJump, mainNavCustom, bottomMainNav, mainNavHeight, mainNavSquare, mainNavAllIcons, mainNavUnread, mainNavUnreadJump,
         replyFullSearch, useInAppCamera, gallerySortByDateTaken,
         galleryQuickSend, editSingleImageBeforeSend, useSystemImagePicker, useSystemAudioPicker, confirmOpenLink, wideUrlMatch, parseNumber, parseAtMember, highlightSelfMention, enableLinkPreview, biliCard,
-        picMaxHeightRatio, longScreenshot, bubbleCornerRadius, bubbleColorSelf, bubbleColorOther, textColor, textColorSelf, linkColor, contactSections, materialContactsList, materialChatList, materialQZoneBar, qzoneBarSpread, qzoneInlineVideo, qzoneMiniAppCard, materializeQzone, qzoneTruncatePost, qzoneTruncateImages,
+        picMaxHeightRatio, longScreenshot, bubbleCornerRadius, bubbleColorSelf, bubbleColorOther, textColor, textColorSelf, linkColor, antiRecall, contactSections, materialContactsList, materialChatList, materialQZoneBar, qzoneBarSpread, qzoneInlineVideo, qzoneMiniAppCard, materializeQzone, qzoneTruncatePost, qzoneTruncateImages,
         profileNameMultiline, useRichProfile, useM3Settings, materializeLogin,
         translateViewLang, translateSendLang, translateShowAllSwitch, translateOwnMessages, translateReplaceInPlace, translateSendButton,
         translateProvider, translateMsKey, translateMsRegion, translateBaiduAppId, translateBaiduKey,

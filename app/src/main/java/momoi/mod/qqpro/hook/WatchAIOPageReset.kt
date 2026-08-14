@@ -26,11 +26,13 @@ import momoi.mod.qqpro.util.Utils
  */
 @Mixin
 class WatchAIOPageReset : WatchAIOFragment() {
+
     // The base WatchFragment builds a full-screen background ImageView (field `d`)
     // behind the chat pages, normally showing R.drawable.bg_blue2white. If the user
     // picked a custom chat background, swap that image in (darkened for readability).
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        ChatBgApplier.lastBgView = this.d
         // 每群独立背景：按当前会话 peerUid 取图（无独立图则回退全局背景），总开关开启才生效。
         val peer = runCatching { CurrentContact.peerUid }.getOrNull()
         if (ChatBackground.enabled() && ChatBackground.isSet(peer)) {
@@ -42,6 +44,8 @@ class WatchAIOPageReset : WatchAIOFragment() {
             this.d?.apply { setImageDrawable(null); setBackgroundColor(M3.surface) }
             Utils.log("WatchAIOFragment.onViewCreated default chat background -> M3.surface")
         }
+        // CurrentContact 此刻可能还是上一个会话的值；ChatPie 钩子稍后会用真实 peer 再挂一次，
+        // 这里先按旧值挂只是兜底（避免无背景时黑屏）。
         if (Settings.attachmentOverlay.value) fixIndicatorIcons(view)
         if (Settings.enableTitlebar.value) {
             // The titlebar replaces the page-indicator dots in both placement modes. The dots live in

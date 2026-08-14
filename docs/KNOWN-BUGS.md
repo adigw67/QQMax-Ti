@@ -17,6 +17,8 @@
 | 11 | 不能发起音视频通话（卡死） | `call/CallAudio.kt`（AudioDeviceCallback API 23+） | ✅ v8 已修，待真机发起通话验证 |
 | 12 | 点击回复卡片跳转时卡死 | `view/SmoothScrollTo.kt` | ✅ v16.2 已修并定位：跳转后的高亮用 View.setForeground（API 23+），API 19 上 NoSuchMethodError 崩主线程 → 低版本改行 alpha 脉冲 |
 | 13 | 收到的图片全部白框损坏、发不出图片 | 图片下载/上传链路 | ✅ 已修复（v16.2 打开内核自动下载开关 + 会话恢复后实测正常；根因含内核 xg_auto_download=false 与富媒体会话鉴权过期） |
+| 14 | 防撤回开启后聊天界面卡死 / “已撤回”标记不显示 | `hook/action/CurrentMsgList.kt`、`aio_cell/AIOCell.kt` | ✅ v31 防撤回修复3 已修并实测：① 卡死根因是 `HashMap.putIfAbsent`（Java 8/API 24+）在 API 19 上每次恢复都抛 NoSuchMethodError——恢复逻辑改成 API 19 兼容写法，且只在收到撤回灰条的帧执行、失败回退内核原列表；② “已撤回”小字不显示是因为恢复发生在渲染前、适配器对比新旧列表时原消息“没变”不重新 bind——改为渲染后主动给可见的已撤回气泡补标（`markRecalledVisible`），bind 路径同时改成递归找正文 TextView |
+| 15 | 聊天页背景会串（A 会话背景显示到 B 会话） | `hook/WatchAIOPageReset.kt`、`hook/action/CurrentContact.kt` | ✅ v31 背景修复已修：背景原来在 `WatchAIOFragment.onViewCreated` 里读全局单例 `CurrentContact.peerUid` 应用，而它更新在后面的 `ChatPie.a()`——切聊天时取到的常是上一个会话的值。改为在 `ChatPie` 钩子拿到本会话真实 peer 后用 `applyPeerBackground` 重挂（独立背景优先→全局→M3 surface），幂等覆盖 |
 
 ## 说明
 

@@ -182,4 +182,13 @@ object Markdown {
             i++
         }
     }
+
+    /**
+     * Convenience wrapper for non-streaming content (群公告正文、机器人 markdown 消息)：
+     * 渲染 [source] 为 SpannableStringBuilder，空内容返回空串。
+     */
+    fun toSpannable(source: CharSequence?): SpannableStringBuilder {
+        if (source.isNullOrEmpty()) return SpannableStringBuilder()
+        return SpannableStringBuilder(render(source.toString()))
+    }
 }

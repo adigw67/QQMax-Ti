@@ -13,6 +13,7 @@ import com.tencent.biz.richframework.util.RFWSaveUtil
 import com.tencent.watch.aio_impl.data.WatchAIOMsgItem
 import WatchPicElementExtKt
 import download
+import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.MsgUtil
 import momoi.mod.qqpro.child
 import momoi.mod.qqpro.hook.ChatMultiSelect
@@ -29,6 +30,7 @@ import momoi.mod.qqpro.hook.screenshot.ChatScreenshot
 import momoi.mod.qqpro.hook.summarize.SummaryMessages
 import momoi.mod.qqpro.hook.summarize.SummaryStore
 import momoi.mod.qqpro.hook.summarize.SummaryViewer
+import momoi.mod.qqpro.hook.view.QuickReplyFragment
 import momoi.mod.qqpro.hook.translate.HistoryTranslate
 import momoi.mod.qqpro.hook.translate.MessageTranslate
 import momoi.mod.qqpro.hook.copyImageFileToClipboard
@@ -194,6 +196,13 @@ suspend fun buildMessageActions(
     // 复读 (resend whole message; not ark/file/combined; live only)
     if (!isHistory && msg != null && (caps.forwardable || caps.fwdText != null) && !caps.isArk)
         add("repeat", "复读", MaterialSymbols.repeat) { repeatMsgRecord(msg, msgItem) }
+    // 快捷回复：用户自定义短语，原样发送（保留空格），带引用原消息。
+    val quickReplies = Settings.quickReplies.value.split("\n").filter { it.isNotEmpty() }
+    if (!isHistory && msg != null && msg.msgId != 0L && fm != null && quickReplies.isNotEmpty())
+        add("quickreply", "快捷回复", MaterialSymbols.reply) {
+            runCatching { QuickReplyFragment(msg, quickReplies).show(fm, "qqpro_quick_reply") }
+                .onFailure { Utils.log("QuickReply: open failed: $it") }
+        }
     // 多选 (enter multi-select)
     if (!isHistory && msg != null && msg.msgId != 0L)
         add("multiselect", "多选", MaterialSymbols.check) { ChatMultiSelect.enter(msg.msgId) }

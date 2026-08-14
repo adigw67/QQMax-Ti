@@ -3,6 +3,7 @@ package momoi.mod.qqpro.api
 import com.tencent.qqnt.kernel.api.impl.GroupService
 import com.tencent.qqnt.kernel.nativeinterface.*
 import com.tencent.qqnt.msg.KernelServiceUtil
+import momoi.mod.qqpro.util.ThreadManager
 import momoi.mod.qqpro.util.Utils
 import momoi.mod.qqpro.util.runOnUi
 import kotlin.concurrent.thread
@@ -10,10 +11,11 @@ import kotlin.concurrent.thread
 /**
  * Group announcement (群公告) reader.
  *
- * Only `getGroupBulletin` works on this watch build: it returns the full set of *active*
- * announcements via the [IKernelGroupListener.onGroupBulletinChange] callback. The richer
- * `getGroupBulletinList` (full history) returns "server get bulletin list err" and the
- * web `list_announce` cgi is dead code here — so active announcements are all we can fetch.
+ * `getGroupBulletin` returns the full set of *active* announcements via the
+ * [IKernelGroupListener.onGroupBulletinChange] callback (the native watch UI also uses this).
+ * The richer full-history API `getGroupBulletinList` lives on the raw native service
+ * (`IQQNTWrapperSession.getGroupService()`), which the original watch app never calls — this
+ * module calls it directly with pagination ([fetchFull]).
  *
  * The body text lives in BulletinFeedsRecord.feedsMsg.feedsContents: each BulletinFeedsContent
  * is a typed chunk carrying its text in contentValue (observed contentType 0 = body text,
@@ -42,6 +44,16 @@ object GroupBulletinApi {
 
     // Pending fetch callbacks keyed by group code (onGroupBulletinChange delivers async).
     private val pending = HashMap<Long, MutableList<(List<Item>) -> Unit>>()
+
+    // ---- 完整历史公告（getGroupBulletinList，分页）----
+    private class FullFetch(val groupCode: Long, val maxItems: Int) {
+        val items = ArrayList<Item>()
+        val callbacks = ArrayList<(List<Item>) -> Unit>()
+        var nextIndex = 0
+        var finished = false
+    }
+
+    private val fullPending = HashMap<Long, FullFetch>()
 
     /**
      * Fetch the active announcements for [groupCode]. [callback] runs on the UI thread with the
@@ -79,6 +91,82 @@ object GroupBulletinApi {
     private fun deliver(groupCode: Long, items: List<Item>) {
         val cbs = synchronized(pending) { pending.remove(groupCode) } ?: return
         runOnUi { cbs.forEach { runCatching { it(items) } } }
+    }
+
+    /**
+     * Fetch the full announcement history (paged, newest→older) for [groupCode]. Delivers on the
+     * UI thread. 走原生 `IKernelGroupService.getGroupBulletinList`：`KernelServiceUtil.g()` 返回
+     * `IQQNTWrapperSession`，其 `getGroupService()` 是未被 R8 改名的原生接口，带历史分页能力。
+     * 拉取失败/超时按空列表回调（调用方可回退到 [fetch] 的“生效中”公告）。
+     */
+    fun fetchFull(groupCode: Long, maxItems: Int = 100, callback: (List<Item>) -> Unit) {
+        val raw = runCatching { KernelServiceUtil.g()?.getGroupService() }.getOrNull()
+        if (raw == null) {
+            Utils.log("GroupBulletin: raw group service null")
+            runOnUi { callback(emptyList()) }
+            return
+        }
+        if (!listenerRegistered) {
+            try {
+                KernelServiceUtil.b()?.m(Listener)
+                listenerRegistered = true
+            } catch (e: Throwable) {
+                Utils.log("GroupBulletin: listener register failed: ${e.message}")
+            }
+        }
+        synchronized(fullPending) {
+            val f = fullPending.getOrPut(groupCode) {
+                FullFetch(groupCode, maxItems).also { requestPage(raw, it) }
+            }
+            f.callbacks.add(callback)
+        }
+    }
+
+    private fun requestPage(raw: IKernelGroupService, f: FullFetch) {
+        val req = GroupBulletinListReq().apply {
+            startIndex = f.nextIndex
+            num = minOf(20, f.maxItems - f.items.size).coerceAtLeast(1)
+            needInstructionsForJoinGroup = 0
+            needPublisherInfo = 0
+        }
+        Utils.log("GroupBulletin: getGroupBulletinList gc=${f.groupCode} start=${req.startIndex} num=${req.num}")
+        runCatching {
+            raw.getGroupBulletinList(f.groupCode, "", "", req) { code, msg ->
+                Utils.log("GroupBulletin: getGroupBulletinList req code=$code msg=$msg gc=${f.groupCode}")
+            }
+        }.onFailure {
+            Utils.log("GroupBulletin: getGroupBulletinList threw: ${it.message}")
+            finishFull(f.groupCode)
+        }
+        // 超时保护：8 秒没等到 onGetGroupBulletinListResult 就按当前结果交付，避免界面一直转圈。
+        ThreadManager.runOnUiThread({
+            synchronized(fullPending) {
+                val cur = fullPending[f.groupCode]
+                if (cur != null && !cur.finished) finishFull(f.groupCode)
+            }
+        }, 8000L)
+    }
+
+    private fun finishFull(groupCode: Long) {
+        val f = synchronized(fullPending) {
+            fullPending.remove(groupCode)?.also { it.finished = true }
+        } ?: return
+        runOnUi { f.callbacks.forEach { runCatching { it(f.items) } } }
+    }
+
+    private fun feedToItem(feed: GroupBulletinFeed): Item {
+        val msg = feed.msg
+        val text = listOfNotNull(msg?.title, msg?.text)
+            .map { it.trim() }.filter { it.isNotEmpty() }.joinToString("\n")
+        // 完整历史的图片只有 picId、无直链 URL，先只展示文字；图片走 activity 接口的直链。
+        return Item(
+            feedId = feed.feedId,
+            fromUid = feed.uin.toString(),
+            time = feed.publishTime.toInt(),
+            pinned = feed.pinned != 0,
+            text = text,
+            images = emptyList(),
+        )
     }
 
     private fun flatten(b: GroupBulletin): List<Item> =
@@ -136,6 +224,10 @@ object GroupBulletinApi {
                     connectTimeout = 10_000
                     readTimeout = 15_000
                     instanceFollowRedirects = true
+                    // 精华图片等 https 直链在 API 19 上同样需要 TLS1.2 才能握手。
+                    if (this is javax.net.ssl.HttpsURLConnection) {
+                        TlsUpgrade.enableTls12(this)
+                    }
                 }
                 val code = conn.responseCode
                 if (code == java.net.HttpURLConnection.HTTP_OK) {
@@ -161,7 +253,21 @@ object GroupBulletinApi {
         }
 
         // --- unused interface methods ---
-        override fun onGetGroupBulletinListResult(j: Long, s: String?, r: GroupBulletinListResult) {}
+        override fun onGetGroupBulletinListResult(j: Long, s: String?, r: GroupBulletinListResult) {
+            Utils.log("GroupBulletin: onGetGroupBulletinListResult gc=$j err=$s srv=${r.srvCode} feeds=${r.feeds?.size} next=${r.nextIndex}")
+            val f = synchronized(fullPending) { fullPending[j] } ?: return
+            r.feeds?.forEach { feed ->
+                val item = feedToItem(feed)
+                if (f.items.none { it.feedId == item.feedId }) f.items.add(item)
+            }
+            val raw = runCatching { KernelServiceUtil.g()?.getGroupService() }.getOrNull()
+            if (raw == null || r.srvCode != 0 || r.feeds.isNullOrEmpty() || r.nextIndex <= 0 || f.items.size >= f.maxItems) {
+                finishFull(j)
+            } else {
+                f.nextIndex = r.nextIndex
+                requestPage(raw, f)
+            }
+        }
         override fun onGroupAdd(j: Long) {}
         override fun onGroupAllInfoChange(p: GroupAllInfo) {}
         override fun onGroupArkInviteStateResult(j: Long, p: GroupArkInviteStateInfo) {}

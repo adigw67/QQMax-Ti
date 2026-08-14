@@ -12,6 +12,7 @@ import com.tencent.qqnt.msg.KernelServiceUtil
 import momoi.anno.mixin.Mixin
 import momoi.mod.qqpro.Settings
 import momoi.mod.qqpro.enums.ChatType
+import momoi.mod.qqpro.hook.ChatBgApplier
 import momoi.mod.qqpro.util.Utils
 
 val Contact.isGroup get() = this.chatType == ChatType.GROUP
@@ -128,6 +129,9 @@ class Hook(p0: IAIOFactory) : ChatPie(p0) {
             CurrentContact.peerUid = it.c
             CurrentContact.guildId = it.d
             CurrentGroupMembers.reset(clearLevels = groupChanged)
+            // 聊天背景按本会话真实 peer 应用——onViewCreated 时 CurrentContact 可能还是上一个
+            // 会话的值（背景串的根因），这里拿到准确联系人后重挂一次（幂等）。
+            ChatBgApplier.applyPeerBackground(it.c)
             if (it.b == ChatType.GROUP) {
                 // Bulk member list for @mention / picker only (no levels). It WILL overwrite the
                 // kernel per-member cache with level=1 stubs, but CurrentMemberInfo now filters
