@@ -4,5 +4,7 @@
 #
 # - InputBarController$inputContent$2: 聊天底部输入框 MD 化（聊天底部按钮调整 @Mixin）
 # - TipsUtils: 破坏性确认对话框 M3 化（TipsDialogHook @StaticHook，退出登录/清空消息等）
+# - RMonitorLauncher: 禁用 QQ RMonitor 启动入口（DisableRMonitor @Mixin；v43 新增，防止 diff 生成法漏掉）
 Lcom/tencent/watch/aio_impl/coreImpl/vb/InputBarController$inputContent$2;
 Lcom/tencent/qqnt/watch/ui/componet/tips/TipsUtils;
+Lcom/tencent/rmonitor/manager/RMonitorLauncher;
