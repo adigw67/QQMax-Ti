@@ -175,3 +175,37 @@ setPadding(8.dp + horizontalInsetPx, 6.dp + safeTopBottomPx, 8.dp + horizontalIn
 - `hook/action/RecentContacts.kt` —— 会话列表 `applyUniformInset`
 - `hook/MainNav.kt` —— 底栏上移 `reserve = barHeight + navInset`
 - `docs/ROUND-SCREEN-CHANGELOG.md`（本文件）
+
+---
+
+# 第 4 轮：Wear OS 风格聊天列表自动宽度 + 长按菜单核验
+
+## 1. 聊天消息列表自动宽度（Wear OS 风格）
+
+- 文件：`hook/AIOContentFrameTitlebar.kt`
+- 采用**方案 B**（不引入 `com.google.android.support:wearable`）：
+  给消息列表 `RecyclerView` 左右套 `RoundWatch.horizontalInsetPx`（= 内切矩形公式 `min/√2` 的边距）
+  并 `clipToPadding = false`，气泡/图片/表情/文字在圆屏上不贴边、不溢出，换行正常。
+- 为何不选方案 A：`WearableRecyclerView` 依赖 `com.google.android.support:wearable`，会向
+  ApkMixin 字节码注入链路引入一个重依赖，且其曲线布局在 API 19 上收益有限、风险高；
+  方案 B 用现有 `RoundWatch` 公式零依赖实现等效的“自适应宽度 + 边缘留白”。
+
+## 2. 长按菜单（完整可见 + 居中/全屏）
+
+- 聊天消息长按：`hook/style/长按菜单调整.kt`（`LongPressMenu`）——自绘居中 `ScrollView` 卡片，
+  `Gravity.CENTER` + 圆屏安全边距，超高内部滚动，所有选项完整可见可点（**已居中，无需改**）。
+- 会话列表长按：`hook/style/CardMarginUnify.kt`（`SelectDialogMargins`）→ `rebuildSettingList`
+  全屏 M3 列表（删除/置顶/免打扰/清空），全屏即全部可见，不裁切（优于受限高度的居中弹窗）。
+- 设置页选择器：`hook/设置页.kt`（`showOptionPicker`）——居中 `Dialog` 列表。
+- 结论：本项目不使用系统 `PopupMenu`；三类长按/选择菜单均已保证“全部选项完整可见”，
+  其中消息长按与设置选择器为居中，会话列表长按为全屏（兜底不裁切）。
+
+## 3. 气泡圆角
+
+- 聊天气泡圆角由既有设置 `Settings.bubbleCornerRadius` 控制（设置 → 聊天显示 → 气泡圆角半径，
+  Material 风格默认 18dp，已接近 20dp）；未硬编码覆盖用户选择。
+
+## 改动文件清单（第 4 轮）
+
+- `hook/AIOContentFrameTitlebar.kt` —— 消息列表圆屏自动宽度（水平内切缩进 + clipToPadding=false）
+- `docs/ROUND-SCREEN-CHANGELOG.md`（本文件）
