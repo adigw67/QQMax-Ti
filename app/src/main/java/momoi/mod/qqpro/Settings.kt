@@ -283,7 +283,8 @@ object Settings {
     val chatBgTranslucent = BooleanPref("chatBgTranslucent", true)
     // 背景图自身半透明程度（0.3~1.0）：数值越小越透，露出下方 M3 surface。
     val chatBgAlpha = FloatPref("chatBgAlpha", 0.85f)
-    // 圆表适配（实验性）：背景图按圆屏内切圆裁剪，避免方图盖到圆表四角。
+    // 圆屏模式（手动开关）：真圆屏/方形屏设备自动启用圆屏适配（见 RoundWatch.enabled），此开关
+    // 用于在其它设备上强制开启/关闭全套圆屏适配——表盘遮罩、安全区、大点击目标、背景图内切圆裁剪。
     val md3eRound = BooleanPref("md3eRound", false)
     // Override chat-bubble fill color, as a hex string (#RRGGBB or #AARRGGBB / with or
     // without the leading #). Blank keeps the original bubble color (sampled per side).

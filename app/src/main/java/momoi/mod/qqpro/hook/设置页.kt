@@ -144,11 +144,8 @@ class 设置页 : SettingsActivity() {
         val scroll = ScrollView(this).apply {
             isFillViewport = true
             setBackgroundColor(M3.surface)
-            // 圆屏安全区（可选）：顶/底留出圆边裁切区，内容不被圆角裁到。
-            if (Settings.md3eRound.value) {
-                val inset = RoundWatch.safeTopBottomPx(this@设置页)
-                setPadding(0, inset, 0, inset)
-            }
+            // 圆屏安全区：顶/底 + 左右各留圆边裁切区，内容不被圆边裁到（仅圆屏模式生效）。
+            RoundWatch.applySafePadding(this)
         }
         val root = LinearLayout(this)
             .vertical()
@@ -214,6 +211,8 @@ class 设置页 : SettingsActivity() {
         val detailScroll = ScrollView(this).apply {
             isFillViewport = true
             setBackgroundColor(M3.surface)
+            // 详情层同样套圆屏安全区（掩码已由 decorView 级别遮罩覆盖整窗）。
+            RoundWatch.applySafePadding(this)
         }
         val detailRoot = LinearLayout(this)
             .vertical()
@@ -481,7 +480,7 @@ class 设置页 : SettingsActivity() {
                 pickMonetImage()
             }
             switch("背景半透明", "开启后背景图按下方透明度值半透明显示，露出 M3 surface；关闭则背景图不透明。重进聊天页生效", Settings.chatBgTranslucent)
-            switch("圆表适配（实验性）", "背景图按圆屏内切圆裁剪，四角露出 M3 surface（圆表安全区）；重进聊天页生效", Settings.md3eRound)
+            switch("圆屏模式", "全面圆屏适配：表盘遮罩、列表/网格/对话框安全区、更大的可点击目标、背景图内切圆裁剪。真圆屏/方形屏设备自动开启，此处可强制开关（重进对应页面生效）", Settings.md3eRound)
             chatBackgroundPicker()
             slider("背景图片透明度", "背景图自身半透明程度（越小越透，露出下方 M3 surface），需开启「背景半透明」；重进聊天页生效", Settings.chatBgAlpha, min = 0.3f, max = 1f)
             slider("背景变暗程度", "调暗背景图以便看清文字，重进聊天页生效", Settings.chatBgDarken, min = 0f, max = 0.9f)

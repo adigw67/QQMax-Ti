@@ -119,11 +119,16 @@ object LongPressMenu {
             isClickable = true
             addView(card, FrameLayout.LayoutParams(MP, WC))
         }
+        // 圆屏模式：菜单卡片内收进圆屏安全区（左右 + 上下各留安全边距），条目不被圆边裁切；
+        // 内容过高时 ScrollView 在安全区内滚动，保证所有选项都能滚到、完整可点。
+        val round = momoi.mod.qqpro.lib.RoundWatch.enabled
+        val sideM = if (round) maxOf(14.dp, momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx)) else 14.dp
+        val topM = if (round) maxOf(14.dp, momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(ctx)) else 14.dp
         val scrim = FrameLayout(ctx).apply {
             setBackgroundColor(0x99_000000.toInt())
             setOnClickListener { runCatching { fragment.dismiss() } }
             addView(scroll, FrameLayout.LayoutParams(MP, WC, Gravity.CENTER).apply {
-                val m = 14.dp; leftMargin = m; rightMargin = m; topMargin = m; bottomMargin = m
+                leftMargin = sideM; rightMargin = sideM; topMargin = topM; bottomMargin = topM
             })
         }
         return SwipeBackLayout(ctx).apply {

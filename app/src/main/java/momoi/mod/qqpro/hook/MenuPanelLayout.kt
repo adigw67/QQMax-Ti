@@ -58,6 +58,10 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
         if (list != null) {
             list.layoutManager = GridLayoutManager(list.context, 1)
             list.clipToPadding = false
+            // 圆屏模式：附件面板卡片内收进圆屏安全区，四角/上下条目不被圆边裁切。
+            val round = momoi.mod.qqpro.lib.RoundWatch.enabled
+            val sideM = if (round) maxOf(14.dp, momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(list.context)) else 14.dp
+            val topM = if (round) maxOf(14.dp, momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(list.context)) else 14.dp
             if (Settings.materialAttachmentMenu.value) {
                 // One M3 surface card holding every row (matches the long-press menu): the rounded
                 // card is the RecyclerView itself, centered with side margins; rows scroll inside it.
@@ -68,9 +72,9 @@ class MenuPanelLayout(p0: (Int) -> Unit, p1: Boolean) : MenuFrame(p0, p1) {
                 list.setPadding(0, 6.dp, 0, 6.dp)
                 list.layoutParams = android.widget.FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER,
-                ).apply { val m = 14.dp; setMargins(m, m, m, m) }
+                ).apply { setMargins(sideM, topM, sideM, topM) }
             } else {
-                list.setPadding(8.dp, 0, 8.dp, 0)
+                list.setPadding(8.dp + sideM, 0, 8.dp + sideM, 0)
             }
         }
         Utils.log("MenuPanelLayout: switched to vertical list")

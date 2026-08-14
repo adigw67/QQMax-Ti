@@ -341,7 +341,11 @@ class MaterialIconButton(ctx: Context) : FrameLayout(ctx) {
         // No container/tint by default: many app icons are already full-color round badges, so a
         // tonal circle behind them and an accent tint just collapse them into blobs. Opt in via
         // [setTonalContainer] / [setIconTint] for monochrome icons that need it.
-        addView(icon, LayoutParams(22.dp, 22.dp, Gravity.CENTER))
+        // 圆屏模式放大图标 + 扩大可点击区域（48dp 命中目标），减少圆边误触。
+        val iconSize = if (momoi.mod.qqpro.lib.RoundWatch.enabled) 28.dp else 22.dp
+        minimumWidth = if (momoi.mod.qqpro.lib.RoundWatch.enabled) 48.dp else 0
+        minimumHeight = if (momoi.mod.qqpro.lib.RoundWatch.enabled) 48.dp else 0
+        addView(icon, LayoutParams(iconSize, iconSize, Gravity.CENTER))
         addView(badge, LayoutParams(LayoutParams.WRAP_CONTENT, 13.dp, Gravity.TOP or Gravity.END))
     }
 

@@ -408,9 +408,18 @@ private fun newScroll(ctx: Context): Pair<ScrollView, LinearLayout> {
         isVerticalScrollBarEnabled = false
         setBackgroundColor(M3.surface)
     }
+    // 圆屏模式：列表列左右 + 顶/底套圆屏安全区，卡片行与首尾行不被圆边裁切（长按列表项弹出的
+    // 设置/操作弹窗也复用此滚动容器）。
+    val round = momoi.mod.qqpro.lib.RoundWatch.enabled
     val col = LinearLayout(ctx).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding(4.dp, 12.dp, 4.dp, 28.dp)
+        if (round) {
+            val h = maxOf(4.dp, momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx))
+            val top = maxOf(12.dp, momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(ctx))
+            setPadding(h, top, h, 28.dp + momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(ctx))
+        } else {
+            setPadding(4.dp, 12.dp, 4.dp, 28.dp)
+        }
     }
     scroll.addView(col, FILL, WRAP)
     return scroll to col

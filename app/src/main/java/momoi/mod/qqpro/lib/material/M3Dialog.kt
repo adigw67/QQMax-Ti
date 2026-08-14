@@ -34,7 +34,16 @@ class M3Dialog(ctx: Context) : ScrollView(ctx) {
 
     private val root = LinearLayout(ctx).vertical().apply {
         gravity = Gravity.CENTER
-        setPadding(20.dp, 20.dp, 20.dp, 20.dp)
+        // 圆屏模式：四周改用圆屏安全区（至少 20dp），内容不被圆边裁切。
+        if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+            val ins = momoi.mod.qqpro.lib.RoundWatch.safeInsets(ctx)
+            setPadding(
+                maxOf(20.dp, ins[0]), maxOf(20.dp, ins[1]),
+                maxOf(20.dp, ins[2]), maxOf(20.dp, ins[3]),
+            )
+        } else {
+            setPadding(20.dp, 20.dp, 20.dp, 20.dp)
+        }
     }
     private val titleView = TextView(ctx).apply {
         textSize = 18f; setTextColor(M3.onSurface); gravity = Gravity.CENTER

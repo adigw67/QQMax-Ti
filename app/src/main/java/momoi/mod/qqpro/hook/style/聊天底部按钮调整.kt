@@ -102,14 +102,23 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
             // Material primary pill for the keyboard button — same accent color as the +/voice
             // buttons (instead of QQ's native blue rounded-rect drawable).
             val inputBg = { roundCornerDrawable(M3.primary, 9999f) }
-            val sideSpaceDp = Settings.screenCornerDiameter.value.toInt()
+            // 圆屏模式：左右边距至少取圆屏安全区，避免输入框两侧按钮被圆边裁切。
+            val sideSpaceDp = if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+                val density = rootContainer.resources.displayMetrics.density
+                maxOf(
+                    Settings.screenCornerDiameter.value.toInt(),
+                    (momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(rootContainer.context) / density).toInt(),
+                )
+            } else {
+                Settings.screenCornerDiameter.value.toInt()
+            }
             // Baseline single-line height of the bar; buttons stay this tall while the EditText grows.
             val lineH = 36.dp
             // Height of the inline reply/edit row (materialized) added on top of the input row inside
             // the pill; the bar grows by this much while a reply/edit is active (see applyInlineGrow).
             val replyRowH = 20.dp
             add<LinearLayout>().size(FILL, FILL).apply {
-                    if (Utils.isRoundScreen) {
+                    if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
                         paddingHorizontal((14.dp / Settings.scale.value).toInt())
                     }
                 }.content {
@@ -502,6 +511,16 @@ class 聊天底部按钮调整() : `InputBarController$inputContent$2`() {
         }
         // 全员禁言 (whole-group mute) + non-admin: hide this input bar and show a hint instead.
         if (Settings.muteHideInputBar.value) applyGroupMuteHint(this)
+        // 圆屏模式：输入框整体上移，底部留圆形内切矩形的安全边距（对称缩进基准 insetPx），
+        // 发送键/语音键底部不被圆边切掉。post 一次等原生把 layoutParams 装好再设 bottomMargin。
+        if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+            val container = rootContainer
+            container.post {
+                val lp = container.layoutParams as? ViewGroup.MarginLayoutParams ?: return@post
+                lp.bottomMargin = momoi.mod.qqpro.lib.RoundWatch.insetPx(container.context)
+                container.layoutParams = lp
+            }
+        }
     }
 
     private fun sendInline(editText: EditText) {

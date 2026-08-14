@@ -67,6 +67,9 @@ class ChatListMaterial : ChatListFragment() {
             root.setBackgroundColor(M3.surface)
             Utils.log("ChatListMaterial: list background materialized")
         }
+        // 圆屏模式：会话列表根布局用**对称**的圆形内切矩形 padding 整体缩进（setPadding(p,p,p,p)），
+        // 不做单向偏移，首尾行与行卡片对称落入内切正方形内。
+        momoi.mod.qqpro.lib.RoundWatch.applyUniformInset(root)
         // Keep DM presence dots fresh as status pushes arrive (gated inside).
         wireRecentOnlineRefresh(root)
         return root

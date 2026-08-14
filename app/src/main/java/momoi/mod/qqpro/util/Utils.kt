@@ -121,11 +121,29 @@ object Utils {
     }
 
     val heightPixels = Resources.getSystem().displayMetrics.heightPixels
-    val isRoundScreen = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    val widthPixels = Resources.getSystem().displayMetrics.widthPixels
+
+    /**
+     * 圆屏（或圆角方形）手表检测。
+     *  - API 23+：直接用系统 [android.content.res.Configuration.isScreenRound]；
+     *  - API 19（本表）：系统无该字段，用「形态启发式」——圆表/方表的显示矩阵是正方形或
+     *    近正方形（圆脸内切于其中，且方形屏同样存在四角被圆边/表圈裁切的问题），因此
+     *    [isSquareScreen] 视为圆屏。
+     *
+     * 注意：刻意**不含** isDebug——debug 包也可能跑在手机上，若把 isDebug 当圆屏会让手机调试时
+     * 被误套圆表遮罩。方形/近方形启发式已覆盖绝大多数圆表（含带下巴的圆表，其显示矩阵仍为方形）。
+     */
+    // 计算属性（get()）而非 val：isSquareScreen 声明在本属性之后，用 get() 保证访问时对象已
+    // 初始化完毕，且 isScreenRound 每次都读系统实时配置。
+    val isRoundScreen: Boolean get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         Resources.getSystem().configuration.isScreenRound
     } else {
-        isDebug
+        isSquareScreen
     }
+
+    /** 正方形 / 近正方形显示矩阵（圆形与方形手表）。 */
+    val isSquareScreen: Boolean = widthPixels > 0 && heightPixels > 0 &&
+        Math.abs(heightPixels - widthPixels) <= Math.max(heightPixels, widthPixels) / 8
 
     fun openUrl(url: String) {
         val normalized = if (url.contains("://")) url else "https://$url"

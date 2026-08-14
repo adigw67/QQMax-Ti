@@ -212,10 +212,15 @@ object MainNav {
                 gravity = Gravity.CENTER
                 clipChildren = false
                 clipToPadding = false
+                // 圆屏模式：导航栏左右各留圆屏安全区，避免「方形铺开」时两侧图标被圆边裁切。
+                if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+                    val navInset = momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(parent.context)
+                    setPadding(navInset, 0, navInset, 0)
+                }
                 // The bar otherwise sits over the window's pure black; fill it with the M3 page
                 // surface so it matches the materialized pages (chat list etc.) seamlessly.
                 // 圆表 UI（可选）：底部导航栏用顶部大圆角的「浮起胶囊」表达风格。
-                background = if (Settings.md3eRound.value) {
+                background = if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
                     GradientDrawable().apply {
                         shape = GradientDrawable.RECTANGLE
                         setColor(M3.surfaceContainerHigh)
@@ -703,6 +708,9 @@ object MainNav {
         // round-screen chin), and a one-shot listener would lock in an intermediate value — leaving a
         // black band at the top because pagerView.translationY was computed against a stale top=0. It
         // is cheap when stable (a single equality check) and stops firing once this nav is removed.
+        // 圆屏模式：底栏从屏幕底部边缘上移（顶/底对称缩进基准 insetPx），固定悬浮在圆形内切
+        // 矩形底部内侧，点击热区完整不裁切。reserve = 导航高度 + 底部安全边距。
+        val navInset = if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.insetPx(parent.context) else 0
         var lastH = -1
         var lastTop = Int.MIN_VALUE
         nav.viewTreeObserver.addOnPreDrawListener(
@@ -713,20 +721,21 @@ object MainNav {
                     if (h <= 0) return true                     // not measured yet; retry next frame
                     if (h == lastH && top == lastTop) return true   // already positioned for this size
                     lastH = h; lastTop = top
+                    val reserve = barHeight + navInset
                     runCatching {
-                        if (pagerView.layoutParams.height != h - barHeight) {
+                        if (pagerView.layoutParams.height != h - reserve) {
                             pagerView.layoutParams =
-                                pagerView.layoutParams.apply { height = h - barHeight }
+                                pagerView.layoutParams.apply { height = h - reserve }
                             pagerView.requestLayout()
                         }
                         if (Settings.bottomMainNav.value) {
-                            // Bar at the bottom; content flush to the top.
-                            nav.translationY = (h - barHeight).toFloat()
+                            // Bar floats INSIDE the safe area's bottom edge; content flush to the top.
+                            nav.translationY = (h - reserve).toFloat()
                             pagerView.translationY = -top.toFloat()
                         } else {
-                            // Bar at the top; push content down below it.
-                            nav.translationY = 0f
-                            pagerView.translationY = (barHeight - top).toFloat()
+                            // Bar at the top, pushed down below the top safe inset.
+                            nav.translationY = navInset.toFloat()
+                            pagerView.translationY = (reserve - top).toFloat()
                         }
                         // Position is set; reveal now so the bar never flashes at a pre-positioned spot.
                         nav.visibility = View.VISIBLE

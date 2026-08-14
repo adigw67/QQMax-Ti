@@ -138,11 +138,18 @@ object ContactTopBar {
         // Track the bar's real height on every layout pass and keep the padding in sync — this also
         // self-corrects if the bar height changes (e.g. a badge appears).
         rv.clipToPadding = false
+        // 圆屏模式：列表左右留圆屏安全区，行卡片不被圆边裁切（顶 padding 由下方 bar 高度回调维护）。
+        if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+            val hInset = momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx)
+            rv.setPadding(hInset, rv.paddingTop, hInset, rv.paddingBottom)
+        }
+        val roundTop = if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(ctx) else 0
         top.addOnLayoutChangeListener { _, _, t, _, b, _, _, _, _ ->
             val h = b - t
-            if (h > 0 && rv.paddingTop != h) {
-                rv.setPadding(rv.paddingLeft, h, rv.paddingRight, rv.paddingBottom)
-                Utils.log("ContactTopBar: set list top padding=$h")
+            val target = h + roundTop
+            if (target > 0 && rv.paddingTop != target) {
+                rv.setPadding(rv.paddingLeft, target, rv.paddingRight, rv.paddingBottom)
+                Utils.log("ContactTopBar: set list top padding=$target")
             }
         }
         Utils.log("ContactTopBar: wrapped")
@@ -158,12 +165,15 @@ object ContactTopBar {
         val search = iconButton(ctx, SearchIcon(c)) { toggleSearch() }
         friendBtn = friend
         groupBtn = group
+        // 圆屏模式：按钮栏左右 + 顶部各留圆屏安全区，避免两侧「加好友/搜索」按钮被圆边裁切。
+        val roundInset = if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx) else 0
+        val roundTop = if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.safeTopBottomPx(ctx) else 0
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
             clipChildren = false
             clipToPadding = false
-            setPadding(8.dp, 6.dp, 8.dp, 4.dp)
+            setPadding(8.dp + roundInset, 6.dp + roundTop, 8.dp + roundInset, 4.dp)
             for (b in listOf(add, friend, group, search)) {
                 // Fixed circular button centered in a weighted cell so the row spreads evenly.
                 val cell = LinearLayout(ctx).apply {
@@ -220,10 +230,11 @@ object ContactTopBar {
             query = et.text?.toString()?.trim().orEmpty()
             submit()
         }
+        val roundInset = if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx) else 0
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(8.dp, 6.dp, 12.dp, 4.dp)
+            setPadding(8.dp + roundInset, 6.dp, 12.dp + roundInset, 4.dp)
             visibility = View.GONE
             addView(back, LinearLayout.LayoutParams(30.dp, 30.dp).apply { marginEnd = 6.dp })
             addView(et, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))

@@ -97,7 +97,11 @@ object RichTitlebar {
             (indicator?.parent as? ViewGroup)?.removeView(indicator)
 
             val heightPx = Settings.titlebarHeight.value.toInt().dp
-            val corner = Settings.titlebarSideMargin.value.toInt().dp
+            // 圆屏模式：左右边距至少取圆屏安全区，标题栏/未读红标不被圆边裁切。
+            val corner = maxOf(
+                Settings.titlebarSideMargin.value.toInt().dp,
+                momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx),
+            )
             val screenW = ctx.resources.displayMetrics.widthPixels
             // Match the input pill exactly: it sits at (chat content base inset) + (corner margin).
             val sideMargin = baseInset + corner
@@ -222,7 +226,12 @@ object RichTitlebar {
             val titleLinePx = nameTv.paint.fontMetrics.let {
                 ((it.descent - it.ascent) + 2 * ctx.resources.displayMetrics.density).toInt()
             }
-            root.addView(bar, FrameLayout.LayoutParams(FILL, maxOf(heightPx, titleLinePx)))
+            // 圆屏模式：顶栏整体下移，顶边留圆形内切矩形的安全边距，返回按钮/联系人名不被削掉。
+            root.addView(bar, FrameLayout.LayoutParams(FILL, maxOf(heightPx, titleLinePx)).apply {
+                if (momoi.mod.qqpro.lib.RoundWatch.enabled) {
+                    topMargin = momoi.mod.qqpro.lib.RoundWatch.insetPx(ctx)
+                }
+            })
             // Re-assert on top after the async ChatFragment view attaches (chat-only overlay).
             bar.bringToFront()
             root.post { bar.bringToFront() }
@@ -324,7 +333,10 @@ object RichTitlebar {
             }
 
             val peerId = fragment.arguments?.getString("key_bundle_peer_id").orEmpty()
-            val corner = Settings.titlebarSideMargin.value.toInt().dp
+            val corner = maxOf(
+                Settings.titlebarSideMargin.value.toInt().dp,
+                momoi.mod.qqpro.lib.RoundWatch.horizontalInsetPx(ctx),
+            )
 
             val view = TextView(ctx).apply {
                 tag = FLOAT_TAG

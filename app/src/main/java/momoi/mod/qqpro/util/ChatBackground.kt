@@ -3,11 +3,7 @@ package momoi.mod.qqpro.util
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ColorFilter
-import android.graphics.Path
-import android.graphics.PixelFormat
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
@@ -112,8 +108,8 @@ object ChatBackground {
                 val overlay = ColorDrawable(Color.argb((darken * 255).toInt(), 0, 0, 0))
                 LayerDrawable(arrayOf<Drawable>(image, overlay))
             }
-            // 圆表适配：按圆屏内切圆裁剪，四角露出 M3 surface，不被方图盖住。
-            if (Settings.md3eRound.value) CircleClipDrawable(base) else base
+            // 圆屏适配：按圆屏内切圆裁剪，四角露出 M3 surface，不被方图盖住。
+            if (momoi.mod.qqpro.lib.RoundWatch.enabled) momoi.mod.qqpro.lib.RoundWatch.circleClip(base) else base
         } catch (e: Exception) {
             Utils.log("ChatBackground load failed: ${e.javaClass.simpleName}: ${e.message}")
             null
@@ -152,22 +148,4 @@ object ChatBackground {
         while (halfW / sample >= reqW && halfH / sample >= reqH) sample *= 2
         return sample
     }
-}
-
-/** 把内层 drawable 裁剪到所在 bounds 的内切圆（圆表安全区）。 */
-private class CircleClipDrawable(private val inner: Drawable) : Drawable() {
-    private val clip = Path()
-    override fun draw(canvas: Canvas) {
-        val r = minOf(bounds.width(), bounds.height()) / 2f
-        clip.reset()
-        clip.addCircle(bounds.exactCenterX(), bounds.exactCenterY(), r, Path.Direction.CW)
-        canvas.save()
-        canvas.clipPath(clip)
-        inner.bounds = bounds
-        inner.draw(canvas)
-        canvas.restore()
-    }
-    override fun setAlpha(alpha: Int) { inner.alpha = alpha }
-    override fun setColorFilter(colorFilter: ColorFilter?) { inner.colorFilter = colorFilter }
-    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 }

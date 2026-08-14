@@ -35,9 +35,11 @@ class M3ListItem(ctx: Context) : LinearLayout(ctx) {
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        // MD3 列表项：横向 16dp，标准行高 56dp（可点击目标）。
-        setPadding(16.dp, 10.dp, 16.dp, 10.dp)
-        setMinimumHeight(56.dp)
+        // MD3 列表项：横向 16dp，标准行高 56dp（可点击目标）。圆屏模式加高到 60dp、纵向
+        // 加宽到 12dp，放大可点击目标、减少圆边处误触（圆屏上手指/腕带更易压到相邻行）。
+        val round = momoi.mod.qqpro.lib.RoundWatch.enabled
+        setPadding(16.dp, if (round) 12.dp else 10.dp, 16.dp, if (round) 12.dp else 10.dp)
+        setMinimumHeight(if (round) 60.dp else 56.dp)
         background = M3.ripple(null)
         textCol.addView(titleView)
         textCol.addView(subtitleView)
@@ -48,8 +50,9 @@ class M3ListItem(ctx: Context) : LinearLayout(ctx) {
     fun dense(): M3ListItem = apply {
         titleView.textSize = 15f
         subtitleView.textSize = 11f
-        setPadding(16.dp, 6.dp, 16.dp, 6.dp)
-        setMinimumHeight(48.dp)
+        val round = momoi.mod.qqpro.lib.RoundWatch.enabled
+        setPadding(16.dp, if (round) 8.dp else 6.dp, 16.dp, if (round) 8.dp else 6.dp)
+        setMinimumHeight(if (round) 52.dp else 48.dp)
     }
 
     fun title(text: CharSequence): M3ListItem = apply { titleView.text = text }
