@@ -1,4 +1,4 @@
-# QQMax-Ti M2.5-4.4 发布包
+# QQMax-Ti
 
 > 面向儿童手表（Android 4.4.4 / API 19）的 QQ 增强改版，基于***QQMax***
 
@@ -10,7 +10,7 @@
 
 ## 这是什么
 
-QQProMax 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研的 **ApkMixin** 工具把 Kotlin 编写的功能注入到原版字节码里：
+QQMax-Ti 在原版手表 QQ（`com.tencent.qqlite`）的基础上，通过自研的 **ApkMixin** 工具把 Kotlin 编写的功能注入到原版字节码里：
 
 - **不改原版 APK 的签名**（保留腾讯 META-INF），老设备可直接覆盖安装；
 - 聊天、空间（说说）、联系人、资料卡等界面整体重做为 **Material 3 风格**；
