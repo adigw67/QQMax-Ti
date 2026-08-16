@@ -1,7 +1,7 @@
 # QQMax-Ti 最终用户许可协议（EULA）/ End-User License Agreement
 
 - **生效日期 / Effective date:** 2026-08-16
-- **版本 / Version:** 1.2
+- **版本 / Version:** 1.3
 - **许可方 / Licensor:** QQMax-Ti 项目作者（本仓库维护者，以下简称"作者"）
 
 > 本协议以中文与英文两种语言提供。如两版本有冲突，**以中文版本为准**。
@@ -28,9 +28,9 @@
 
 ### 2. 授权范围
 
-2.1 **源代码与资源**：本软件自研部分的源代码与资源，授权您为**个人或非商业目的**查看、学习、研究、技术互操作与存档使用。
+2.1 **源代码与资源（GPL）**：本仓库（含本软件自研部分的源代码与资源）依据随附的 [`LICENSE`](LICENSE)——**GNU General Public License，版本 3（GPL-3.0）**——授权。就源代码与资源而言，您被授予的权利、义务与限制以 **GPL-3.0** 为准，包括但不限于：使用、复制、修改、再分发及向使用者提供对应源代码的义务（Copyleft）。
 
-2.2 **安装包**：授权您在本人合法拥有的设备上，为**个人或非商业目的**安装与使用官方发行包。
+2.2 **安装包（EULA）**：本 EULA 是针对**官方发行包（二进制 APK）**的补充条款，授权您在本人合法拥有的设备上，为**个人或非商业目的**安装与使用官方发行包，并就接受方式、可接受使用、免责、第三方组件、终止及争议解决等事项作出约定。本 EULA 不扩大、不替代 GPL-3.0 已明确授予的权利；就发行包中二进制特有的事项及与 GPL-3.0 不冲突的条款，以本 EULA 为准。
 
 2.3 **商业使用**：任何商业用途（包括但不限于收费下载、捆绑销售、付费技术服务、广告或流量变现、将本软件用于经营行为）均须事先取得作者的**书面授权**。
 
@@ -104,7 +104,7 @@
    - (b) 您对该字体或依据 GPL 修改的衍生作品进行再分发时，须随附 GPL 许可文本并保持版权声明；
    - (c) 在字体嵌入例外允许的范围内，将字体嵌入其他作品不受 GPL 传染性条款约束。
 
-5.5 **开源许可优先**：本软件中受 GPL 或其他开源许可（"**开源许可**"）约束的任何部分，其许可范围、条件与限制均以相应开源许可为准。**当本协议与适用的开源许可发生冲突时，就开源许可所覆盖的部分，以开源许可为准**；本协议不限制、不取代开源许可已明确授予您的权利。本项目整体仍按本 EULA 的条款授权，本协议中与开源许可不冲突的条款继续适用。
+5.5 **开源许可优先**：本仓库源代码依据 **GPL-3.0** 授权（见第 2.1 条），所用 GNU Unifont 依据 **GPL-2.0 或更高版本**授权。本软件中受 GPL 或其他开源许可（"**开源许可**"）约束的任何部分，其许可范围、条件与限制均以相应开源许可为准。**当本协议与适用的开源许可发生冲突时，就开源许可所覆盖的部分，以开源许可为准**；本协议不限制、不取代开源许可已明确授予您的权利。发行包中二进制特有的、与开源许可不冲突的条款继续适用。
 
 5.6 **逆向工程限制**：除适用法律强制性规定明确允许、权利人自身授权或适用的开源许可明确授予外，您不得对本软件或腾讯 QQ 进行规避技术保护措施的逆向工程、反编译、反汇编、破解或绕过操作。
 
@@ -148,9 +148,9 @@
 
 ### 2. Scope of License
 
-2.1 **Source code and assets.** The self-developed source code and assets of the Software are licensed for **personal or Non-Commercial purposes** only, including viewing, studying, research, technical interoperability, and personal archival use.
+2.1 **Source code and assets (GPL).** This repository (including the self-developed source code and assets of the Software) is licensed under the accompanying [`LICENSE`](LICENSE), the **GNU General Public License, version 3 (GPL-3.0)**. As to the source code and assets, your rights, obligations, and restrictions are governed by **GPL-3.0**, including, without limitation, the rights to use, copy, modify, and redistribute, and the copyleft obligation to provide corresponding source code to recipients.
 
-2.2 **Installation packages.** You are licensed to install and use official distribution packages on devices You lawfully own, for **personal or Non-Commercial purposes**.
+2.2 **Installation packages (EULA).** This EULA provides **supplemental terms for official binary distribution packages (APK)**, licensing You to install and use them on devices You lawfully own for **personal or Non-Commercial purposes**, and addressing acceptance, acceptable use, disclaimers, third-party components, termination, and dispute resolution. It does not expand or replace rights expressly granted by GPL-3.0; matters specific to the binary distribution package and provisions that do not conflict with GPL-3.0 are governed by this EULA.
 
 2.3 **Commercial Use.** Any Commercial Use (including paid downloads, bundling for sale, paid technical services, advertising or traffic monetization, or using the Software in business operations) requires the author's prior **written authorization**.
 
@@ -215,7 +215,7 @@ You shall **not** use the Software for: (a) any unlawful activity; (b) unauthori
    - (b) when redistributing the font or GPL-modified derivative works, you must include the GPL license text and retain copyright notices;
    - (c) to the extent permitted by the font-embedding exception, embedding the font in other works is not subject to the GPL's copyleft provisions.
 
-5.5 **Open-source license prevails.** Any part of the Software subject to the GPL or another open-source license (an "**Open-Source License**") is governed by that Open-Source License as to its scope, conditions, and restrictions. **Where this Agreement conflicts with an applicable Open-Source License, the Open-Source License prevails with respect to the covered part**; this Agreement does not restrict or replace rights expressly granted by an Open-Source License. The project as a whole remains licensed under this EULA, and the provisions of this Agreement that do not conflict with an Open-Source License continue to apply.
+5.5 **Open-source license prevails.** This repository's source code is licensed under **GPL-3.0** (see Section 2.1), and the GNU Unifont font used by the Software is licensed under **GPL-2.0 or later**. Any part of the Software subject to the GPL or another open-source license (an "**Open-Source License**") is governed by that Open-Source License as to its scope, conditions, and restrictions. **Where this Agreement conflicts with an applicable Open-Source License, the Open-Source License prevails with respect to the covered part**; this Agreement does not restrict or replace rights expressly granted by an Open-Source License. Provisions specific to the binary distribution package that do not conflict with an Open-Source License continue to apply.
 
 5.6 **Reverse-engineering restrictions.** Except to the extent expressly permitted by mandatory applicable law, authorized by the rights holder, or expressly granted by an applicable Open-Source License, You may not reverse engineer, decompile, disassemble, circumvent, crack, or bypass technical-protection measures in the Software or Tencent QQ.
 
