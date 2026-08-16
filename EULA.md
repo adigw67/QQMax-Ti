@@ -1,7 +1,7 @@
 # QQMax-Ti 最终用户许可协议（EULA）/ End-User License Agreement
 
 - **生效日期 / Effective date:** 2026-08-16
-- **版本 / Version:** 1.1
+- **版本 / Version:** 1.2
 - **许可方 / Licensor:** QQMax-Ti 项目作者（本仓库维护者，以下简称"作者"）
 
 > 本协议以中文与英文两种语言提供。如两版本有冲突，**以中文版本为准**。
@@ -97,9 +97,16 @@
 
 5.2 **运行环境组件**：root 权限、Xposed 框架、核心破解（CorePatch）等工具为第三方提供，作者不提供、不担保，其安装与使用风险由您自行承担。
 
-5.3 **开源字体**：联网字体包中的 MiSans（版权归小米公司）与 GNU Unifont（GPL 许可）等字体版权归其各自权利人；本软件仅按其各自许可在其允许范围内使用。
+5.3 **开源字体**：联网字体包中的 MiSans（版权归小米公司）与 GNU Unifont 等字体版权归其各自权利人；本软件仅按其各自许可在其允许范围内使用。
 
-5.4 **逆向工程限制**：除适用法律强制性规定明确允许或权利人自身授权外，您不得对本软件或腾讯 QQ 进行规避技术保护措施的逆向工程、反编译、反汇编、破解或绕过操作。
+5.4 **GNU Unifont 与 GPL**：本软件使用的 **GNU Unifont** 依据 **GNU General Public License（GPL），版本 2 或（由您选择的）任何更高版本** 授权，并带有 GNU Unifont 字体嵌入例外条款。就该字体及其衍生作品而言，您被授予的权利、义务与限制以 **GNU GPL** 文本为准，包括但不限于：
+   - (a) 您可以在遵守 GPL 的前提下使用、复制、修改与再分发该字体；
+   - (b) 您对该字体或依据 GPL 修改的衍生作品进行再分发时，须随附 GPL 许可文本并保持版权声明；
+   - (c) 在字体嵌入例外允许的范围内，将字体嵌入其他作品不受 GPL 传染性条款约束。
+
+5.5 **开源许可优先**：本软件中受 GPL 或其他开源许可（"**开源许可**"）约束的任何部分，其许可范围、条件与限制均以相应开源许可为准。**当本协议与适用的开源许可发生冲突时，就开源许可所覆盖的部分，以开源许可为准**；本协议不限制、不取代开源许可已明确授予您的权利。本项目整体仍按本 EULA 的条款授权，本协议中与开源许可不冲突的条款继续适用。
+
+5.6 **逆向工程限制**：除适用法律强制性规定明确允许、权利人自身授权或适用的开源许可明确授予外，您不得对本软件或腾讯 QQ 进行规避技术保护措施的逆向工程、反编译、反汇编、破解或绕过操作。
 
 ### 6. 终止
 
@@ -201,9 +208,16 @@ You shall **not** use the Software for: (a) any unlawful activity; (b) unauthori
 
 5.2 **Runtime components.** Root access, the Xposed framework, core-patch tools, and similar utilities are provided by third parties. The author does not provide or warrant them; installation and use risks are entirely Your own.
 
-5.3 **Open-source fonts.** Fonts in the online font pack, such as MiSans (copyright Xiaomi) and GNU Unifont (GPL), belong to their respective rights holders and are used only to the extent permitted by their respective licenses.
+5.3 **Open-source fonts.** Fonts in the online font pack, such as MiSans (copyright Xiaomi) and GNU Unifont, belong to their respective rights holders and are used only to the extent permitted by their respective licenses.
 
-5.4 **Reverse-engineering restrictions.** Except to the extent expressly permitted by mandatory applicable law or authorized by the rights holder, You may not reverse engineer, decompile, disassemble, circumvent, crack, or bypass technical-protection measures in the Software or Tencent QQ.
+5.4 **GNU Unifont and GPL.** The **GNU Unifont** font used by the Software is licensed under the **GNU General Public License (GPL), version 2 or (at your option) any later version**, with the GNU Unifont font-embedding exception. For that font and its derivative works, your rights, obligations, and restrictions are governed by the text of the **GNU GPL**, including, without limitation:
+   - (a) you may use, copy, modify, and redistribute the font in compliance with the GPL;
+   - (b) when redistributing the font or GPL-modified derivative works, you must include the GPL license text and retain copyright notices;
+   - (c) to the extent permitted by the font-embedding exception, embedding the font in other works is not subject to the GPL's copyleft provisions.
+
+5.5 **Open-source license prevails.** Any part of the Software subject to the GPL or another open-source license (an "**Open-Source License**") is governed by that Open-Source License as to its scope, conditions, and restrictions. **Where this Agreement conflicts with an applicable Open-Source License, the Open-Source License prevails with respect to the covered part**; this Agreement does not restrict or replace rights expressly granted by an Open-Source License. The project as a whole remains licensed under this EULA, and the provisions of this Agreement that do not conflict with an Open-Source License continue to apply.
+
+5.6 **Reverse-engineering restrictions.** Except to the extent expressly permitted by mandatory applicable law, authorized by the rights holder, or expressly granted by an applicable Open-Source License, You may not reverse engineer, decompile, disassemble, circumvent, crack, or bypass technical-protection measures in the Software or Tencent QQ.
 
 ### 6. Termination
 
