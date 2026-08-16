@@ -1,107 +1,88 @@
-# QQMax-Ti 最终用户许可协议（EULA）
+# QQMax-Ti 最终用户许可协议（EULA）/ End-User License Agreement
 
-**生效日期**：2026-08-16  
-**适用对象**：所有下载、安装、使用或分发 QQMax-Ti（以下简称“本软件”）的个人或组织。  
-**下载、安装或使用本软件，即表示您已阅读、理解并同意接受本协议的全部条款。若您不同意，请勿下载、安装或使用本软件，并立即删除已获取的所有副本。**
+- **生效日期 / Effective date:** 2026-08-16
+- **版本 / Version:** 1.0
+- **许可方 / Licensor:** QQMax-Ti 项目作者（本仓库维护者）
 
----
-
-## 1. 非官方声明
-
-1.1 本软件是第三方开发者基于个人兴趣对腾讯公司（Tencent）手表版 QQ（包名 `com.tencent.qqlite`）制作的增强改版。
-
-1.2 本软件与腾讯公司**没有任何关联、授权、赞助或背书关系**。本软件不是腾讯官方产品，腾讯公司不对本软件承担任何责任。
-
-1.3 本软件的名称、图标及说明仅用于描述其功能，不代表腾讯公司的认可。
-
-## 2. 知识产权归属
-
-2.1 腾讯 QQ 及其相关商标（“QQ”“腾讯”等）、软件代码、界面资源、图形素材、服务内容的全部知识产权归腾讯公司及其权利人所有。
-
-2.2 本仓库**不包含**腾讯 QQ 的原版代码或官方素材；原版 APK 需使用者自行从合法渠道获取。
-
-2.3 本软件自研部分（包括但不限于 `app/src/main/java/momoi/` 模块、ApkMixin 构建工具、文档与配置）的知识产权归本软件作者所有，并依本协议授权使用。
-
-## 3. 授权范围
-
-在遵守本协议的前提下，作者授予使用者**有限的、不可转让的、非独占的、可撤销的**许可：
-
-3.1 在本人合法拥有的设备上，为个人、非商业目的安装与使用本软件；
-
-3.2 为学习、研究、个人存档目的复制本仓库源代码。
-
-## 4. 禁止行为
-
-未经作者事先书面许可，使用者不得：
-
-4.1 将本软件或其安装包用于**任何商业用途**，包括但不限于收费下载、捆绑销售、付费技术服务、广告盈利；
-
-4.2 以任何形式向第三方**有偿或无偿分发**本软件的安装包或修改后的安装包（自用 fork 除外）；
-
-4.3 移除、篡改或遮盖本软件及仓库中的版权声明、作者信息或本协议；
-
-4.4 利用本软件从事违反中国法律法规、侵犯他人合法权益或破坏计算机信息系统的行为；
-
-4.5 声称本软件为官方产品，或利用本软件误导他人。
-
-## 5. 风险自担
-
-5.1 本软件以修改第三方应用字节码的方式运行，可能产生以下风险，**使用者须自行承担全部风险与后果**：
-
-- 违反腾讯《软件许可及服务协议》或相关条款，导致 QQ 账号被限制、封禁或功能不可用；
-- 与官方版本或系统组件不兼容，导致功能异常、界面错乱或应用崩溃；
-- 造成设备系统不稳定、性能下降、异常重启、数据丢失或存储空间异常占用；
-- 因系统签名校验、多开检测或安全机制导致的其他不可预见的后果。
-
-5.2 使用者应确保：
-
-- 已获得使用本软件所必需的技术条件（如设备已 root、已安装 Xposed 等），并理解其风险；
-- 遵守所在司法辖区的法律法规；
-- 未成年人应在监护人知情并同意的前提下使用。
-
-## 6. 无担保声明
-
-本软件按“**原样**”（AS IS）提供，作者**不提供任何明示或默示的担保**，包括但不限于：
-
-- 适销性、特定用途适用性；
-- 不侵犯第三方权利；
-- 功能的完整性、准确性、可靠性或可用性；
-- 与任何特定设备、系统版本或应用版本的兼容性。
-
-作者不保证本软件不存在缺陷，也不承诺修复缺陷或持续更新。
-
-## 7. 责任限制
-
-在法律允许的最大范围内，作者对因使用或无法使用本软件而产生的任何**直接、间接、偶然、特殊、惩罚性或后果性损害**（包括但不限于：数据丢失、利润损失、业务中断、设备损坏、账号损失、人身或财产损害）**不承担任何责任**，即使作者已被告知此类损害可能发生。
-
-## 8. 合规要求
-
-8.1 使用者应自行判断其所在司法辖区的法律是否允许安装、使用本类修改软件。
-
-8.2 若当地法律或腾讯服务条款禁止本软件的使用，使用者必须停止使用并删除本软件。
-
-8.3 因使用者违反法律法规或腾讯服务条款而产生的任何责任，由使用者自行承担。
-
-## 9. 协议终止
-
-9.1 使用者违反本协议任何条款时，本授权**自动立即终止**，无需作者另行通知。
-
-9.2 授权终止后，使用者必须停止使用本软件，并删除本软件的所有副本与安装包。
-
-## 10. 协议变更
-
-10.1 作者保留随时修改本协议的权利。重大变更将随版本更新或通过仓库公告的方式告知。
-
-10.2 协议变更后，继续使用本软件即视为接受变更后的协议。
-
-## 11. 其他
-
-11.1 本协议任何条款被认定为无效或不可执行，不影响其余条款的效力。
-
-11.2 本协议构成使用者与作者之间关于本软件的完整约定。
-
-11.3 本协议的解释与执行适用中华人民共和国法律；因本协议产生的争议，双方应友好协商解决，协商不成的，提交作者所在地有管辖权的人民法院处理。
+> 本协议以中文与英文两种语言提供。如两版本有冲突，**以中文版本为准**。
+> This Agreement is provided in Chinese and English. **In case of any conflict, the Chinese version prevails.**
 
 ---
 
-**再次提醒：本软件为第三方修改程序，使用有风险，请自行评估后使用。因使用本软件产生的一切后果，均由使用者自行承担。**
+## 中文版
+
+### 1. 定义与接受
+1.1 "**本软件**"指 QQMax-Ti 及其官方发行包，包括 Android 安装包（APK）、源代码（`app/src/main/java/momoi/` 等自研模块）、ApkMixin 构建工具、文档及相关组件。
+1.2 "**您**"指下载、安装、运行或以其他方式使用本软件的个人或实体。
+1.3 下载、安装、运行或使用本软件，即表示您已阅读、理解并同意受本协议约束。**若您不同意本协议，请勿使用本软件并删除其全部副本。**
+
+### 2. 授权范围
+2.1 本软件自研部分的**源代码与资源**按本协议授权，仅限您为**个人或非商业目的**查看、学习、研究、技术互操作与存档使用。
+2.2 **任何商业使用**，以及公开发布修改版或衍生版，均须事先取得本项目作者的书面授权。
+2.3 本软件是**第三方修改程序**：它在腾讯手表版 QQ（包名 `com.tencent.qqlite`）原版字节码基础上注入自研功能，并以保留腾讯原签名的方式重新组装发行。**腾讯 QQ 的原版代码、资源与商标不属于本项目**，其全部权利归腾讯公司及其权利人所有；本软件不授予您任何腾讯 QQ 的权利。
+2.4 您须自行从合法渠道获取原版 QQ，并仅在本人合法拥有的设备上使用本软件。
+
+### 3. 免责声明
+3.1 **非官方、无隶属**：本软件是独立的第三方互操作性项目，与腾讯公司（Tencent）及 QQ **无任何隶属、合作、授权或背书关系**。"QQ""腾讯"等名称及标识为其各自所有者的商标。
+3.2 **用途**：除非事先取得书面授权，本软件仅供**个人或其他非商业用途**使用，包括学习、研究、技术互操作与个人存档。
+3.3 **合规义务**：您须自行确保对本软件的使用符合一切适用法律法规，以及所接入平台的规定（包括但不限于《QQ 用户协议》与相关服务条款）。
+3.4 **按"现状"提供**：本软件按"**现状（AS-IS）**"及"**现有（AS-AVAILABLE）**"提供，不附带任何明示或默示的担保，包括但不限于对适销性、特定用途适用性、不侵权、可用性、准确性或不中断的担保。
+3.5 **责任限制**：在适用法律允许的最大范围内，对于因使用或无法使用本软件而导致的任何直接、间接、偶然、特殊、惩罚性或后果性损害（包括但不限于账号封禁或限制、数据丢失、利润或业务损失、设备异常或损坏、服务中断），本项目作者**概不承担责任**。
+3.6 **风险自负**：您理解，以修改字节码的方式使用非官方版本接入腾讯平台，**可能违反腾讯服务条款并导致账号风险、功能异常或设备问题**，您**自愿承担**该等风险。
+
+### 4. 可接受使用
+您**不得**将本软件用于：(a) 任何违法犯罪活动；(b) 未经授权访问、干扰或破坏任何系统或网络；(c) 发送垃圾信息、实施骚扰、欺诈或传播恶意内容；(d) 侵犯他人隐私、知识产权或其他合法权益；(e) 任何违反所接入平台服务条款的行为；(f) 任何商业用途（未经书面授权）。
+
+### 5. 第三方组件
+5.1 本软件发行包中包含腾讯 QQ 原版 APK 的组件（其代码、资源、签名与商标均归腾讯公司所有）。本项目作者不对腾讯 QQ 的任何组件作出陈述或担保，亦不授予其任何权利。
+5.2 您不得将腾讯 QQ 的原版组件与本软件分离后单独再分发、转售或再许可。
+5.3 除适用法律强制性规定明确允许或腾讯自身授权外，您不得对本软件或腾讯 QQ 进行规避技术保护措施的逆向工程、破解或绕过操作。
+
+### 6. 终止
+若您违反本协议，相关授权将**自动立即终止**。终止后，您应停止使用本软件并删除其全部副本与安装包。
+
+### 7. 适用法律与争议解决
+本协议的订立、效力、解释、履行及争议解决，均适用**中华人民共和国大陆地区法律**（不含其冲突法规则）。因本协议引起或与之相关的任何争议，双方应首先友好协商解决；协商不成的，任何一方可向**有管辖权的人民法院**提起诉讼。
+
+### 8. 协议的变更
+本项目作者可不时更新本协议。更新后的版本将随发行包发布并注明生效日期。在更新生效后继续使用本软件，即视为您接受更新后的条款。
+
+---
+
+## English Version
+
+### 1. Definitions and Acceptance
+1.1 "**Software**" means QQMax-Ti and its official distribution packages, including the Android package (APK), source code (self-developed modules such as `app/src/main/java/momoi/`), the ApkMixin build tool, documentation, and related components.
+1.2 "**You**" means the individual or entity that downloads, installs, runs, or otherwise uses the Software.
+1.3 By downloading, installing, running, or using the Software, you acknowledge that you have read, understood, and agree to be bound by this Agreement. **If you do not agree, do not use the Software and delete all copies.**
+
+### 2. Scope of License
+2.1 The self-developed **source code and assets** of the Software are licensed under this Agreement for **personal or Non-Commercial purposes** only, including viewing, studying, research, technical interoperability, and personal archival use.
+2.2 **Any Commercial Use, and any public release of a modified or derivative version, requires the project author's prior written authorization.**
+2.3 The Software is a **third-party modification**: it injects self-developed functionality into Tencent's watch QQ (package `com.tencent.qqlite`) and redistributes it while preserving Tencent's original signature. **Tencent QQ's original code, assets, and trademarks are not part of this project**; all such rights belong to Tencent and its rights holders. This Agreement grants You no rights in Tencent QQ.
+2.4 You must obtain the original QQ from lawful channels and use the Software only on devices You lawfully own.
+
+### 3. Disclaimers
+3.1 **Not official; no affiliation.** The Software is an independent, third-party interoperability project and has **no affiliation, partnership, authorization, or endorsement relationship** with Tencent or QQ. "QQ", "Tencent", and related marks belong to their respective owners.
+3.2 **Purpose.** Unless prior written authorization has been obtained, the Software may be used only for **personal or other Non-Commercial purposes**, including study, research, technical interoperability, and personal archival use.
+3.3 **Compliance.** You are responsible for ensuring that your use complies with all applicable laws and with the terms of any platform you connect to (including the QQ User Agreement and related terms of service).
+3.4 **AS-IS.** The Software is provided "**AS IS**" and "**AS AVAILABLE**", without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, non-infringement, availability, accuracy, or uninterrupted operation.
+3.5 **Limitation of liability.** To the maximum extent permitted by law, the project author shall **not be liable** for any direct, indirect, incidental, special, punitive, or consequential damages (including account suspension or restriction, data loss, lost profits or business, device malfunction or damage, or service interruption) arising from use of or inability to use the Software.
+3.6 **Assumption of risk.** You understand that using an unofficial version that modifies bytecode to connect to Tencent's platform **may violate Tencent's terms of service and carry account, functionality, or device risks**, which you **voluntarily assume**.
+
+### 4. Acceptable Use
+You shall **not** use the Software for: (a) any unlawful activity; (b) unauthorized access to, interference with, or disruption of any system or network; (c) spam, harassment, fraud, or malicious content; (d) infringement of others' privacy, intellectual-property, or other lawful rights; (e) any conduct that violates the terms of service of a connected platform; or (f) any Commercial Use without prior written authorization.
+
+### 5. Third-Party Components
+5.1 The distribution packages contain components of Tencent's original QQ APK (code, assets, signature, and trademarks all owned by Tencent). The project author makes no representations or warranties regarding Tencent QQ components and grants no rights in them.
+5.2 You may not separate Tencent QQ's original components from the Software and redistribute, resell, or sublicense them independently.
+5.3 Except to the extent expressly permitted by mandatory applicable law or authorized by Tencent itself, you may not reverse engineer, circumvent, crack, or bypass technical-protection measures in the Software or Tencent QQ.
+
+### 6. Termination
+If you breach this Agreement, the granted rights **terminate automatically and immediately**. Upon termination, you must cease using the Software and delete all copies and installation packages.
+
+### 7. Governing Law and Disputes
+This Agreement is governed by the laws of the **mainland of the People's Republic of China** (excluding its conflict-of-laws rules). Any dispute arising out of or relating to this Agreement shall first be resolved through good-faith negotiation; failing that, either party may bring an action before a **court of competent jurisdiction**.
+
+### 8. Changes
+The project author may update this Agreement from time to time. Updated versions will be published with the distribution package and bear an effective date. Continued use after an update takes effect constitutes acceptance of the updated terms.
